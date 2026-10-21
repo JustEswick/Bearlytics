@@ -15,9 +15,19 @@
       "git status*": "allow",
       "git diff*": "allow",
       "git log*": "allow",
+      "git show*": "allow",
+      "git branch*": "allow",
+      "git fetch*": "allow",
+      "git switch*": "allow",
+      "git checkout -b*": "allow",
+      "git pull*": "ask",
       "git add*": "ask",
       "git commit*": "ask",
-      "git push*": "deny"
+      "git push*": "ask",
+      "git push* origin main*": "deny",
+      "git push --force*": "deny",
+      "git push -f*": "deny",
+      "git reset --hard*": "deny"
     },
     "webfetch": "allow",
     "websearch": "allow"

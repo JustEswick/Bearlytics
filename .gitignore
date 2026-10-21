@@ -7,6 +7,10 @@
 Thumbs.db
 Desktop.ini
 
+# Node (solo para la validacion de la configuracion de agentes)
+node_modules/
+package-lock.json
+
 # MATLAB
 matlab.prf
 *.mex*

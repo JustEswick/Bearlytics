@@ -8,9 +8,11 @@
         └──────────┘   └──────────┘   └────────────┘   └──────────┘
         eda-analyst    eda-analyst    feature-engineer  rul-modeler
              ▲                                                 │
-             └──────────── matlab-reviewer ◄───────────────────┘
+             └──────── matlab-reviewer ◄───────────────────┘
                             (revisa antes de cerrar cada fase)
 ```
+
+Cada fase vive en su propia rama `feature/<fase>-<tarea>` y llega a `main` mediante un **PR revisado por una persona**. Ninguna fase empieza hasta que el gate de la anterior está mergeado en `main`.
 
 `bearlytics-lead` orquesta: comprueba el gate de entrada de cada fase, delega en el agente correspondiente y verifica los entregables antes de pasar a la siguiente.
 
@@ -84,11 +86,15 @@
 - **H3 — Modelo evaluado**: score PHM 2012 comparable con el baseline, figuras y tabla de resultados.
 - **H4 — Documentado**: `README.md` de cada fase y `README.md` raíz al día.
 
+Cada hito se cierra con un **PR a `main`** que cumple el gate de su fase, revisado y mergeado por una persona. La política de ramas está en [`GIT_WORKFLOW.md`](GIT_WORKFLOW.md).
+
 ## Antipatrones a evitar
 
+- Trabajar o commitear directamente en `main`.
 - Saltarse de fase "para ir rápido" y descubrir en `Modeling` que el HI no es monótono.
 - Normalizar con todo el dataset (incluido test) antes de partir.
 - Partir por snapshot: filtra información y falsea los resultados.
 - Normalizar con el valor inicial en lugar de con la media/std del train.
 - Reportar métricas sin la ejecución real que las produce.
 - Ajustar a los datos de test una vez que se ha visto el score de test.
+- Mezclar dos fases o dos temas en la misma rama.

@@ -10,12 +10,19 @@ Bearlytics/
 ├── opencode.json          # config de proyecto: permisos, agente por defecto
 ├── .opencode/
 │   ├── agent/             # 5 agentes
-│   ├── command/           # 4 comandos /flujos
-│   └── skill/             # 4 skills de dominio
+│   ├── command/           # 5 comandos /flujos
+│   └── skill/             # 5 skills de dominio
 ├── Agentes/
 │   ├── README.md          # este documento
-│   └── WORKFLOWS.md       # flujo end-to-end, handoffs y gates
-└── CLAUDE.md              # puente para Claude Code / Cursor
+│   ├── WORKFLOWS.md       # flujo end-to-end, handoffs y gates
+│   └── GIT_WORKFLOW.md    # política de ramas y colaboración
+├── scripts/
+│   └── validate-agents.mjs  # valida la configuración (lo ejecuta la CI)
+├── .github/
+│   ├── PULL_REQUEST_TEMPLATE.md
+│   └── workflows/validate-agents.yml
+├── CLAUDE.md              # puente para Claude Code / Cursor
+└── 10. FEMTO Bearing/     # dataset (solo local, fuera de git)
 ```
 
 ## Los agentes
@@ -49,6 +56,7 @@ O deja que `bearlytics-lead` los invoque por ti cuando la tarea lo requiera.
 | `/preprocess` | Fase PreProcess: features, HI, ground truth y splits |
 | `/model` | Fase Modeling: baseline + modelos + evaluación PHM 2012 |
 | `/score` | Evalúa un modelo existente y genera el informe de resultados |
+| `/branch` | Crea la rama de trabajo de una fase desde `main` actualizado |
 
 ## Las skills (conocimiento de dominio)
 
@@ -60,6 +68,18 @@ Se cargan bajo demanda cuando la tarea lo necesita:
 | `matlab-conventions` | Estilo de código del repo, toolbox, ejecución con `matlab -batch`, checklist de calidad |
 | `rul-features` | Catálogo de features (time/frequency/envelope/WPD) y construcción del Health Index |
 | `phm-scoring` | Función de score asimétrico del IEEE PHM 2012, RMSE/MAE y protocolo de evaluación |
+| `git-workflow` | Política de ramas, nomenclatura, checklist de PR y comandos de git |
+
+## Flujo de trabajo Git
+
+El proyecto usa **trunk-based por fases**: `main` es el trunk y **nunca se trabaja directamente sobre ella**.
+
+- Ramas cortas por entregable: `feature/<fase>-<tarea>`, con fases `eda-uni`, `eda-multi`, `preprocess`, `modeling`; más `fix/`, `exp/`, `docs/`, `chore/`.
+- Todo PR cumple el **gate de su fase** e incluye la evidencia de ejecución real.
+- El **merge a `main` lo hace siempre una persona**; los agentes dejan el PR listo.
+- Rebase sí en tu rama de trabajo; nunca force-push ni reescritura de `main`.
+
+Política completa: [`GIT_WORKFLOW.md`](GIT_WORKFLOW.md) (resumen en `AGENTS.md` §7).
 
 ## Permisos: aislamiento por fase
 
@@ -85,3 +105,4 @@ Esto evita que un agente "arregle" datos o que un modelo se contamine con inform
 - Los agentes, comandos y skills son ficheros markdown: se editan, revisan y versionan como código.
 - Al cambiar un agente, revisa que su `description` siga siendo inequívoca: es lo que el modelo lee para decidir a quién delegar.
 - Mantén `AGENTS.md` corto y accionable: se inyecta en **cada** sesión, así que cada línea debe ganar su lugar.
+- La CI (`validate-agents`) comprueba que `opencode.json` sigue siendo válido y que el frontmatter de agentes, comandos y skills es correcto. Para validarlo en local: `node scripts/validate-agents.mjs`.

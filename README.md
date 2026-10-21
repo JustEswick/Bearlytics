@@ -28,7 +28,9 @@ Bearlytics/
 ├── AGENTS.md           # Reglas del proyecto para agentes de IA
 ├── opencode.json       # Configuración de agentes (permisos, agente por defecto)
 ├── .opencode/          # Agentes, comandos y skills de IA
-├── Agentes/            # Documentación de roles y flujos de trabajo
+├── Agentes/            # Documentación de roles, flujos y política de git
+├── scripts/            # Utilidades de validación de la configuración
+├── .github/            # Plantilla de PR y CI
 ├── 10. FEMTO Bearing/  # Dataset (solo local, excluido de git)
 └── README.md
 ```
@@ -136,3 +138,29 @@ CLAUDE.md          # puente para Claude Code / Cursor
 4. **Reiniciar opencode** tras el pull: la configuración se carga al arrancar, no en caliente.
 
 Detalle completo en [`Agentes/README.md`](Agentes/README.md) y [`Agentes/WORKFLOWS.md`](Agentes/WORKFLOWS.md).
+
+---
+
+## Flujo de trabajo Git (colaboración)
+
+El proyecto usa **trunk-based por fases**: `main` es el trunk y **no se trabaja directamente sobre ella**.
+
+- **Ramas cortas por entregable**, creadas desde `main` actualizado:
+  `feature/eda-uni-<tarea>` · `feature/eda-multi-<tarea>` · `feature/preprocess-<tarea>` · `feature/modeling-<tarea>`
+  (además `fix/`, `exp/`, `docs/`, `chore/`).
+- **Cada PR cumple el gate de su fase** e incluye la evidencia de ejecución real (salida de `matlab -batch`).
+- **El merge a `main` lo hace siempre una persona**; los agentes preparan el PR y lo dejan listo.
+- Rebase sí en tu rama de trabajo; nunca force-push ni reescritura de `main`.
+- Etiquetas por fase cerrada: `v0.1.eda-uni`, `v0.2.preprocess`, `v0.3.modeling`.
+
+```bash
+git switch main && git pull --ff-only
+git switch -c feature/eda-uni-degradacion-inicial
+# ... trabajo ...
+git pull --rebase origin main
+git push -u origin feature/eda-uni-degradacion-inicial
+```
+
+En opencode, el comando `/branch <fase> [tarea]` crea la rama correcta por ti. La plantilla de PR está en `.github/PULL_REQUEST_TEMPLATE.md` y la CI valida la configuración de agentes en cada PR.
+
+Política completa: [`Agentes/GIT_WORKFLOW.md`](Agentes/GIT_WORKFLOW.md) · resumen operativo en [`AGENTS.md`](AGENTS.md) §7.

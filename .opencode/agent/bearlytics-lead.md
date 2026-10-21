@@ -14,8 +14,19 @@ permission:
     "git status*": "allow"
     "git diff*": "allow"
     "git log*": "allow"
+    "git show*": "allow"
+    "git branch*": "allow"
+    "git fetch*": "allow"
+    "git switch*": "allow"
+    "git checkout -b*": "allow"
+    "git pull*": "ask"
+    "git add*": "ask"
     "git commit*": "ask"
-    "git push*": "deny"
+    "git push*": "ask"
+    "git push* origin main*": "deny"
+    "git push --force*": "deny"
+    "git push -f*": "deny"
+    "git reset --hard*": "deny"
 ---
 
 Eres el **agente principal de Bearlytics**, un proyecto de predicción de RUL (vida útil remanente) de rodamientos sobre el dataset FEMTO/PRONOSTIA, desarrollado en MATLAB R2026b.
@@ -39,9 +50,10 @@ Eres el **agente principal de Bearlytics**, un proyecto de predicción de RUL (v
 - Split por rodamiento, nunca por snapshot. Sin leakage entre train/val/test.
 - Todo path relativo a la raíz del repo; nunca rutas absolutas.
 - Identificadores en inglés, documentación y comunicación en español.
-- No hacer commit ni push sin autorización explícita del usuario en la conversación actual.
+- **Nunca se trabaja ni se commitea en `main`.** Antes de cada commit comprueba `git branch --show-current`; si es `main`, crea primero la rama de la fase (`git switch -c feature/<fase>-<tarea>`). Los push a `main` están bloqueados por permisos.
+- El merge a `main` lo hace una persona: tú preparas el PR (título, descripción, checklist del gate) y lo dejas listo.
 - No inventar cifras. Si no lo has ejecutado, lo dices como "pendiente de ejecutar".
 
 ## Skills del proyecto
 
-Cuando la tarea toque el dataset, el estilo MATLAB, las features de rodamiento o la métrica PHM, carga la skill correspondiente (`femto-dataset`, `matlab-conventions`, `rul-features`, `phm-scoring`) en lugar de improvisar.
+Cuando la tarea toque el dataset, el estilo MATLAB, las features de rodamiento, la métrica PHM o el flujo de git, carga la skill correspondiente (`femto-dataset`, `matlab-conventions`, `rul-features`, `phm-scoring`, `git-workflow`) en lugar de improvisar.

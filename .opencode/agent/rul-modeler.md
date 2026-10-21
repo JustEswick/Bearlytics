@@ -13,6 +13,17 @@ permission:
     "matlab -batch *": "allow"
     "git status*": "allow"
     "git diff*": "allow"
+    "git log*": "allow"
+    "git branch*": "allow"
+    "git switch*": "allow"
+    "git checkout -b*": "allow"
+    "git pull*": "ask"
+    "git add*": "ask"
+    "git commit*": "ask"
+    "git push*": "ask"
+    "git push* origin main*": "deny"
+    "git push --force*": "deny"
+    "git push -f*": "deny"
   task:
     "*": "deny"
     "matlab-reviewer": "allow"
@@ -58,3 +69,4 @@ Escribes código **solo** en `Modeling/` y resultados en `results/`.
 - Rutas relativas; nunca `C:\...`.
 - `10. FEMTO Bearing/` es solo lectura.
 - Puedes pedir una revisión con el subagente `matlab-reviewer` antes de dar por cerrada una entrega.
+- **Git**: trabaja en una rama `feature/modeling-<tarea>` (o `exp/<experimento>`) creada desde `main` actualizado. Nunca commitees en `main`; antes de commitear, comprueba `git branch --show-current`. El merge a `main` lo hace una persona.
