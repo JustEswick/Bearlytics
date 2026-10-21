@@ -11,3 +11,7 @@ Desktop.ini
 matlab.prf
 *.mex*
 autosave/
+
+# Resultados pesados (las figuras .png/.pdf si se versionan)
+results/*.mat
+results/**/*.mat

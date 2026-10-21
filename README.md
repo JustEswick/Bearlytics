@@ -23,6 +23,12 @@ Bearlytics/
 │   └── Multi/          # EDA multivariado
 ├── PreProcess/         # Pre-procesamiento y extracción de features
 ├── Modeling/           # Modelos de RUL
+├── results/            # Figuras y tablas generadas
+├── +bearlytics/        # Funciones reutilizables (paquete MATLAB)
+├── AGENTS.md           # Reglas del proyecto para agentes de IA
+├── opencode.json       # Configuración de agentes (permisos, agente por defecto)
+├── .opencode/          # Agentes, comandos y skills de IA
+├── Agentes/            # Documentación de roles y flujos de trabajo
 ├── 10. FEMTO Bearing/  # Dataset (solo local, excluido de git)
 └── README.md
 ```
@@ -95,3 +101,38 @@ Este proyecto se desarrolla en **MATLAB R2026b** editando desde **VS Code**.
 ### Depuración
 
 Con la extensión oficial se puede depurar (breakpoints, workspace, step-through) directamente en VS Code contra la sesión local de MATLAB.
+
+---
+
+## Agentes de IA (configuración compartida)
+
+El repositorio incluye una configuración de agentes de IA **versionada**, para que todo el equipo trabaje con la misma lógica y las mismas reglas.
+
+```
+AGENTS.md          # reglas del proyecto (cargadas automáticamente en cada sesión)
+opencode.json      # permisos, agente por defecto, rutas de instrucciones
+.opencode/
+├── agent/         # 5 agentes: lead, eda-analyst, feature-engineer, rul-modeler, matlab-reviewer
+├── command/       # /eda, /preprocess, /model, /score
+└── skill/         # femto-dataset, matlab-conventions, rul-features, phm-scoring
+Agentes/
+├── README.md      # roles, invocación y permisos
+└── WORKFLOWS.md   # flujo EDA → PreProcess → Modeling, gates y handoffs
+CLAUDE.md          # puente para Claude Code / Cursor
+```
+
+### Qué hay preparado
+
+- **Roles por fase**: cada agente escribe únicamente en la carpeta de su fase (`EDA/`, `PreProcess/`, `Modeling/`), y el dataset es de **solo lectura** para todos.
+- **Comandos de flujo**: `/eda`, `/preprocess`, `/model` y `/score` ejecutan una fase completa con su gate de salida.
+- **Skills de dominio**: conocimiento del dataset FEMTO, convenciones MATLAB, catálogo de features y métrica PHM 2012, disponibles bajo demanda.
+- **Git bajo control**: `git commit` pide confirmación y `git push` está bloqueado para los agentes.
+
+### Cómo lo obtienen los colaboradores
+
+1. Clonar el repositorio (la configuración viene dentro).
+2. Tener MATLAB R2026b y la extensión oficial "MATLAB" de MathWorks en VS Code.
+3. Descargar el dataset en `10. FEMTO Bearing/` (no se versiona, ver guía del dataset más arriba).
+4. **Reiniciar opencode** tras el pull: la configuración se carga al arrancar, no en caliente.
+
+Detalle completo en [`Agentes/README.md`](Agentes/README.md) y [`Agentes/WORKFLOWS.md`](Agentes/WORKFLOWS.md).

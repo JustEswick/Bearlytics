@@ -1,0 +1,25 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "default_agent": "bearlytics-lead",
+  "instructions": ["AGENTS.md", "Agentes/WORKFLOWS.md"],
+  "permission": {
+    "edit": {
+      "*": "allow",
+      "10. FEMTO Bearing/**": "deny",
+      "*.mat": "deny"
+    },
+    "bash": {
+      "*": "ask",
+      "matlab *": "allow",
+      "matlab -batch *": "allow",
+      "git status*": "allow",
+      "git diff*": "allow",
+      "git log*": "allow",
+      "git add*": "ask",
+      "git commit*": "ask",
+      "git push*": "deny"
+    },
+    "webfetch": "allow",
+    "websearch": "allow"
+  }
+}
