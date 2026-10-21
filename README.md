@@ -30,7 +30,7 @@ Bearlytics/
 ├── .opencode/          # Agentes, comandos y skills de IA
 ├── Agentes/            # Documentación de roles, flujos y política de git
 ├── scripts/            # Utilidades de validación de la configuración
-├── .github/            # Plantilla de PR y CI
+├── .github/            # CODEOWNERS, plantilla de PR y CI
 ├── 10. FEMTO Bearing/  # Dataset (solo local, excluido de git)
 └── README.md
 ```
@@ -115,20 +115,21 @@ AGENTS.md          # reglas del proyecto (cargadas automáticamente en cada sesi
 opencode.json      # permisos, agente por defecto, rutas de instrucciones
 .opencode/
 ├── agent/         # 5 agentes: lead, eda-analyst, feature-engineer, rul-modeler, matlab-reviewer
-├── command/       # /eda, /preprocess, /model, /score
-└── skill/         # femto-dataset, matlab-conventions, rul-features, phm-scoring
+├── command/       # /eda, /preprocess, /model, /score, /branch
+└── skill/         # femto-dataset, matlab-conventions, rul-features, phm-scoring, git-workflow
 Agentes/
 ├── README.md      # roles, invocación y permisos
-└── WORKFLOWS.md   # flujo EDA → PreProcess → Modeling, gates y handoffs
+├── WORKFLOWS.md   # flujo EDA → PreProcess → Modeling, gates y handoffs
+└── GIT_WORKFLOW.md # política de ramas, protección de main y onboarding
 CLAUDE.md          # puente para Claude Code / Cursor
 ```
 
 ### Qué hay preparado
 
 - **Roles por fase**: cada agente escribe únicamente en la carpeta de su fase (`EDA/`, `PreProcess/`, `Modeling/`), y el dataset es de **solo lectura** para todos.
-- **Comandos de flujo**: `/eda`, `/preprocess`, `/model` y `/score` ejecutan una fase completa con su gate de salida.
-- **Skills de dominio**: conocimiento del dataset FEMTO, convenciones MATLAB, catálogo de features y métrica PHM 2012, disponibles bajo demanda.
-- **Git bajo control**: `git commit` pide confirmación y `git push` está bloqueado para los agentes.
+- **Comandos de flujo**: `/eda`, `/preprocess`, `/model` y `/score` ejecutan una fase completa con su gate de salida; `/branch` crea la rama de trabajo de una fase.
+- **Skills de dominio**: conocimiento del dataset FEMTO, convenciones MATLAB, catálogo de features, métrica PHM 2012 y política de git, disponibles bajo demanda.
+- **Git bajo control**: los agentes comprueban la rama antes de commitear, nunca commitean en `main`, el push a `main` está bloqueado por permisos y el merge lo hace el owner.
 
 ### Cómo lo obtienen los colaboradores
 
@@ -149,8 +150,9 @@ El proyecto usa **trunk-based por fases**: `main` es el trunk y **no se trabaja 
   `feature/eda-uni-<tarea>` · `feature/eda-multi-<tarea>` · `feature/preprocess-<tarea>` · `feature/modeling-<tarea>`
   (además `fix/`, `exp/`, `docs/`, `chore/`).
 - **Cada PR cumple el gate de su fase** e incluye la evidencia de ejecución real (salida de `matlab -batch`).
-- **El merge a `main` lo hace siempre una persona**; los agentes preparan el PR y lo dejan listo.
+- GitHub exige **1 revisión aprobadora de otra persona** (nadie aprueba su propio PR) y la CI en verde. El **merge a `main` lo hace el owner**; los agentes preparan el PR y lo dejan listo.
 - Rebase sí en tu rama de trabajo; nunca force-push ni reescritura de `main`.
+- Métodos de merge: solo **squash** y **rebase**.
 - Etiquetas por fase cerrada: `v0.1.eda-uni`, `v0.2.preprocess`, `v0.3.modeling`.
 
 ```bash
@@ -161,6 +163,10 @@ git pull --rebase origin main
 git push -u origin feature/eda-uni-degradacion-inicial
 ```
 
-En opencode, el comando `/branch <fase> [tarea]` crea la rama correcta por ti. La plantilla de PR está en `.github/PULL_REQUEST_TEMPLATE.md` y la CI valida la configuración de agentes en cada PR.
+En opencode, el comando `/branch <fase> [tarea]` crea la rama correcta por ti. La plantilla de PR está en `.github/PULL_REQUEST_TEMPLATE.md` y la CI valida la configuración de agentes y el título del PR en cada PR.
 
-Política completa: [`Agentes/GIT_WORKFLOW.md`](Agentes/GIT_WORKFLOW.md) · resumen operativo en [`AGENTS.md`](AGENTS.md) §7.
+### Protección de `main` (activa)
+
+`main` está protegida por el **ruleset** `main trunk-based`: PR obligatorio, 1 aprobación de otra persona, CI obligatoria, force push y borrado bloqueados, métodos de merge squash/rebase y bypass del owner solo vía PR (no puede pushear a `main`). Además, `.github/CODEOWNERS` solicita automáticamente la revisión del owner en cada PR y en cada fase.
+
+Política completa, estado real de la protección y onboarding de colaboradores: [`Agentes/GIT_WORKFLOW.md`](Agentes/GIT_WORKFLOW.md) · resumen operativo en [`AGENTS.md`](AGENTS.md) §7.

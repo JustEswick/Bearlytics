@@ -15,10 +15,11 @@ Bearlytics/
 ├── Agentes/
 │   ├── README.md          # este documento
 │   ├── WORKFLOWS.md       # flujo end-to-end, handoffs y gates
-│   └── GIT_WORKFLOW.md    # política de ramas y colaboración
+│   └── GIT_WORKFLOW.md    # política de ramas, protección de main y onboarding
 ├── scripts/
 │   └── validate-agents.mjs  # valida la configuración (lo ejecuta la CI)
 ├── .github/
+│   ├── CODEOWNERS             # owners por fase (revisión automática)
 │   ├── PULL_REQUEST_TEMPLATE.md
 │   └── workflows/validate-agents.yml
 ├── CLAUDE.md              # puente para Claude Code / Cursor
@@ -75,11 +76,20 @@ Se cargan bajo demanda cuando la tarea lo necesita:
 El proyecto usa **trunk-based por fases**: `main` es el trunk y **nunca se trabaja directamente sobre ella**.
 
 - Ramas cortas por entregable: `feature/<fase>-<tarea>`, con fases `eda-uni`, `eda-multi`, `preprocess`, `modeling`; más `fix/`, `exp/`, `docs/`, `chore/`.
-- Todo PR cumple el **gate de su fase** e incluye la evidencia de ejecución real.
-- El **merge a `main` lo hace siempre una persona**; los agentes dejan el PR listo.
+- Todo PR cumple el **gate de su fase**, incluye la evidencia de ejecución real y el título en formato Conventional Commits.
+- GitHub exige **1 revisión aprobadora de otra persona** (nadie aprueba su propio PR) y la CI en verde. El **merge a `main` lo hace el owner**; los agentes dejan el PR listo.
 - Rebase sí en tu rama de trabajo; nunca force-push ni reescritura de `main`.
+- Métodos de merge: solo squash y rebase.
 
-Política completa: [`GIT_WORKFLOW.md`](GIT_WORKFLOW.md) (resumen en `AGENTS.md` §7).
+### Protecciones activas en GitHub
+
+| Protección | Qué hace |
+|---|---|
+| Ruleset `main trunk-based` | PR obligatorio, 1 aprobación, CI obligatoria, force push y borrado bloqueados, bypass del owner solo vía PR |
+| `.github/CODEOWNERS` | GitHub solicita la revisión del owner en todo PR (y en cada fase) |
+| CI `validate-agents` | Valida `opencode.json` y el frontmatter de agentes, comandos y skills; exige el título Conventional Commits |
+
+Política completa, estado real de la protección y onboarding: [`GIT_WORKFLOW.md`](GIT_WORKFLOW.md) (resumen en `AGENTS.md` §7).
 
 ## Permisos: aislamiento por fase
 

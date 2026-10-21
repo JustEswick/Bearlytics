@@ -12,7 +12,7 @@
                             (revisa antes de cerrar cada fase)
 ```
 
-Cada fase vive en su propia rama `feature/<fase>-<tarea>` y llega a `main` mediante un **PR revisado por una persona**. Ninguna fase empieza hasta que el gate de la anterior está mergeado en `main`.
+Cada fase vive en su propia rama `feature/<fase>-<tarea>` y llega a `main` mediante un **PR con 1 revisión aprobadora de otra persona**, mergeado por el owner del repositorio. Ninguna fase empieza hasta que el gate de la anterior está mergeado en `main`.
 
 `bearlytics-lead` orquesta: comprueba el gate de entrada de cada fase, delega en el agente correspondiente y verifica los entregables antes de pasar a la siguiente.
 
@@ -86,7 +86,7 @@ Cada fase vive en su propia rama `feature/<fase>-<tarea>` y llega a `main` media
 - **H3 — Modelo evaluado**: score PHM 2012 comparable con el baseline, figuras y tabla de resultados.
 - **H4 — Documentado**: `README.md` de cada fase y `README.md` raíz al día.
 
-Cada hito se cierra con un **PR a `main`** que cumple el gate de su fase, revisado y mergeado por una persona. La política de ramas está en [`GIT_WORKFLOW.md`](GIT_WORKFLOW.md).
+Cada hito se cierra con un **PR a `main`** que cumple el gate de su fase, con 1 aprobación de otra persona y la CI en verde, mergeado por el owner. La política de ramas y el estado real de la protección están en [`GIT_WORKFLOW.md`](GIT_WORKFLOW.md).
 
 ## Antipatrones a evitar
 

@@ -113,7 +113,7 @@ git push -u origin feature/eda-uni-degradacion-inicial
 2. **Una rama, un tema.** Rama corta (días, no semanas) y orientada a un único entregable.
 3. **Toda rama nace de `main` actualizado**, no de otra rama de trabajo.
 4. **Todo PR debe cumplir el gate de su fase** (ver tabla de la sección 3) e incluir la evidencia de ejecución real.
-5. **El merge a `main` lo hace siempre una persona.** Los agentes preparan el PR y lo dejan listo; no lo mergean.
+5. **El merge a `main` lo hace el owner del repositorio.** GitHub exige **1 revisión aprobadora de otra persona** (nadie puede aprobar su propio PR) y la CI en verde. Los agentes preparan el PR y lo dejan listo; no lo mergean.
 6. **Rebase sí** en tu rama de trabajo (`git pull --rebase origin main`) para mantener el historial lineal. **Nunca** rebases `main` ni ramas compartidas.
 7. **Prohibido** `git push --force`, `git push -f` y `git reset --hard` sobre ramas compartidas. `--force-with-lease` solo sobre ramas personales.
 8. **Commits atómicos**: un commit = un cambio con sentido. Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `refactor:`, `test:`) con el alcance de fase opcional (`feat(eda-uni): ...`).
@@ -121,18 +121,26 @@ git push -u origin feature/eda-uni-degradacion-inicial
 10. **Tags**: al cerrar una fase completa se etiqueta `v0.<n>.<fase>` (p. ej. `v0.1.eda-uni`). El tag lo pone una persona.
 11. **No hacer `git commit` ni `git push` sin autorización explícita del usuario** en la conversación actual.
 12. Nunca hacer `git push --force`, `git reset --hard` ni reescribir historia.
+13. El título del PR debe cumplir Conventional Commits (`feat|fix|docs|chore|refactor|test(<fase>): ...`): la CI lo verifica.
 
 ### 7.3 Protección de `main` en GitHub
 
-`main` debe estar protegida (Settings → Branches → Branch rules):
+`main` está protegida por el **ruleset** `main trunk-based` (Settings → Rules → Rulesets). Lo que GitHub exige en la práctica:
 
-- Require a pull request before merging.
-- Require approvals: 1 revisor.
-- Require linear history.
-- Do not allow bypassing the above settings.
-- Block force pushes y block deletions.
+| Requisito | Qué exige | Si se incumple |
+|---|---|---|
+| Cambios en `main` | Siempre vía Pull Request | Push directo rechazado |
+| Aprobación | 1 revisión de otra persona (el autor no puede aprobar su PR) | Merge deshabilitado |
+| Aprobación caducada | Se descarta si se suben commits nuevos | Merge deshabilitado |
+| Conversación | Ningún comentario del reviewer puede quedar abierto | Merge deshabilitado |
+| CI | `Valida opencode.json, agentes, comandos y skills` en verde | Merge deshabilitado |
+| Rama al día | El PR se evalúa contra `main` actualizado | GitHub pide actualizar la rama |
+| Force push / borrado | Bloqueados | Rechazado |
+| Merge methods | Solo squash y rebase | El merge commit no existe |
+| Bypass | Solo el owner y solo vía PR (no puede pushear a `main`) | Puede mergear sin CI ni aprobación |
 
-Ver el procedimiento completo en `Agentes/GIT_WORKFLOW.md`.
+Revisión automática de las rutas de cada fase: `.github/CODEOWNERS` (el owner es solicitado en todo PR).
+Detalle completo, verificación por API y onboarding de colaboradores: `Agentes/GIT_WORKFLOW.md` §8.
 
 ## 8. Entregables por fase
 
@@ -144,6 +152,7 @@ Ver el procedimiento completo en `Agentes/GIT_WORKFLOW.md`.
 ## 9. Referencias internas
 
 - `Agentes/WORKFLOWS.md` — flujo end-to-end, handoffs y gates entre agentes.
-- `Agentes/GIT_WORKFLOW.md` — política de ramas, ciclo de vida de una rama y protección de `main`.
+- `Agentes/GIT_WORKFLOW.md` — política de ramas, estado real de la protección y onboarding de colaboradores.
 - `Agentes/README.md` — roles de los agentes y cuándo invocarlos.
+- `.github/CODEOWNERS` — owners por fase (revisión automática en cada PR).
 - Skills del proyecto: `femto-dataset`, `matlab-conventions`, `rul-features`, `phm-scoring`, `git-workflow`.

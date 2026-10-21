@@ -18,8 +18,27 @@ jobs:
         with:
           node-version: "20"
 
+      - name: Cache de npm
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-${{ runner.os }}-ajv
+          restore-keys: npm-${{ runner.os }}-
+
       - name: Instalar ajv
         run: npm install --no-save --no-fund --no-audit ajv
 
       - name: Validar configuracion de agentes
         run: node scripts/validate-agents.mjs
+
+      - name: Validar titulo del PR (Conventional Commits)
+        if: github.event_name == 'pull_request'
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if ! echo "$PR_TITLE" | grep -Eq '^(feat|fix|docs|chore|refactor|test|perf)(\([a-z0-9-]+\))?: .+'; then
+            echo "::error::El titulo del PR no cumple Conventional Commits."
+            echo "Formatos validos: 'feat(preprocess): ...', 'fix: ...', 'docs: ...', 'chore: ...'"
+            exit 1
+          fi
+          echo "Titulo del PR conforme: $PR_TITLE"
