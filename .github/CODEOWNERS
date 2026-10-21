@@ -1,0 +1,22 @@
+# CODEOWNERS — Bearlytics
+# GitHub solicita la revision de estos owners automaticamente en cada PR que toque
+# las rutas indicadas. Ver: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+#
+# Regla por defecto: todo el repositorio es propiedad del owner del proyecto.
+*                       @JustEswick
+
+# Fases del pipeline: cada cambio debe ser revisado por el owner.
+# EDA/Uni/              @JustEswick
+# EDA/Multi/            @JustEswick
+/EDA/                   @JustEswick
+/PreProcess/            @JustEswick
+/Modeling/              @JustEswick
+
+# Configuracion de agentes de IA: cambios sensibles, siempre revisados.
+/.opencode/             @JustEswick
+/AGENTS.md              @JustEswick
+/Agentes/               @JustEswick
+/CLAUDE.md              @JustEswick
+/opencode.json          @JustEswick
+/scripts/               @JustEswick
+/.github/               @JustEswick

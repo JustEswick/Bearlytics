@@ -48,11 +48,13 @@
 - [ ] Split por rodamiento, sin fuga de información entre train/validation/test
 - [ ] Sin rutas absolutas en el código
 - [ ] Los cambios del dataset local no se han versionado
-- [ ] Hay al menos un revisor aprobado
+- [ ] El título sigue Conventional Commits (`feat(preprocess): ...`) — lo verifica la CI
+- [ ] La CI está en verde
 
 ## Revisión
 
-<!-- Quién revisa y el estado. El merge a main lo hace una persona. -->
-
 - Revisor(a):
 - ¿Ejecutado con MATLAB R2026b?:
+- ¿Aprobación de otra persona? (el autor no puede aprobar su propio PR)
+
+> GitHub exige 1 revisión aprobadora de otra persona y la CI en verde para poder mergear. El merge a `main` lo hace el owner del repositorio.
