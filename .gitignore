@@ -1,0 +1,13 @@
+# Dataset (FEMTO/PRONOSTIA) - solo local, no se sube a GitHub (>100 MB por archivo)
+10. FEMTO Bearing/
+*.zip
+
+# IDE / sistema
+.vscode/
+Thumbs.db
+Desktop.ini
+
+# MATLAB
+matlab.prf
+*.mex*
+autosave/
