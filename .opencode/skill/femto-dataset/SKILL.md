@@ -22,11 +22,12 @@ Conocimiento de referencia del dataset que usa Bearlytics. **Verifica siempre el
 
 | Elemento | Valor |
 |---|---|
-| Rodamientos | 17 en total: 6 con fallo completo (training) + 11 truncados (test) |
+| Rodamientos | 17 únicos: 6 en `Learning_set` + 11 en `Full_Test_Set`; `Test_set` repite los 11 truncados |
 | Sensores | 2 acelerómetros por rodamiento: **horizontal** y **vertical** |
 | Frecuencia de muestreo | **25 600 Hz** |
-| Muestras por fichero | **2560** (= 0,1 s a 25,6 kHz) |
-| Ficheros por snapshot | **10** por sensor (0,1 s × 10 = 1 s de señal) |
+| Muestras por fichero | **2 560** (= 0,1 s a 25,6 kHz) |
+| Ficheros por snapshot | **1 CSV** con las dos señales |
+| Columnas del CSV | 6: hora, minuto, segundo, microsegundo, señal H, señal V |
 | Cadencia de snapshot | cada **10 s** hasta el fallo |
 | Fallos | Reales y naturales (no se indujeron defectos) |
 
@@ -42,17 +43,18 @@ El rodamiento se codifica como `BearingX_Y`, donde `X` es la condición de opera
 
 ## Ubicación local
 
-El dataset vive **solo en local** en `10. FEMTO Bearing/` (raíz del repo) y está excluido de git:
-
-```
+```text
 10. FEMTO Bearing/
-├── FEMTOBearingDataSet.zip   # conjunto original completo (~1,1 GB)
-├── Training_set.zip          # partición de entrenamiento (~134 MB)
-├── Validation_Set.zip        # partición de validación (~302 MB)
-└── Test_set.zip              # partición de test (~673 MB)
+├── FEMTOBearingDataSet.zip   # contenedor original completo (~1,1 GB)
+├── Training_set.zip          # -> Learning_set/ (6 rodamientos)
+├── Validation_Set.zip        # -> Full_Test_Set/ (11 rodamientos)
+├── Test_set.zip              # -> Test_set/ (11 rodamientos truncados)
+├── Learning_set/             # 8.384 CSV
+├── Full_Test_Set/            # 19.523 CSV
+└── Test_set/                 # 15.685 CSV
 ```
 
-Rutas relativas a la raíz del repo; nunca absolutas.
+`Test_set/` es un prefijo de `Full_Test_Set/`: mismos 11 rodamientos, menos snapshots. No es una partición independiente.
 
 ## Reglas de acceso
 
@@ -63,15 +65,14 @@ Rutas relativas a la raíz del repo; nunca absolutas.
 ## Inspección del layout (empieza siempre aquí)
 
 ```matlab
-% Listar particiones y rodamientos disponibles
-datasetRoot = fullfile(fileparts(mfilename('fullpath')), '10. FEMTO Bearing');
+% Ejecutar desde la raíz del repo, o definir repoRoot una sola vez.
+datasetRoot = fullfile(pwd, '10. FEMTO Bearing');
 parts = dir(datasetRoot);
 disp({parts.name});
 
-% Listar el contenido de un rodamiento concreto (ajusta la ruta real)
-bearingDir = fullfile(datasetRoot, 'Training_set', 'Bearing1_1');
+bearingDir = fullfile(datasetRoot, 'Learning_set', 'Bearing1_1');
 if isfolder(bearingDir)
-    files = dir(fullfile(bearingDir, '*.txt'));
+    files = dir(fullfile(bearingDir, 'acc_*.csv'));
     fprintf('Ficheros: %d\n', numel(files));
     disp({files(1:min(10, end)).name});
 end
@@ -82,12 +83,13 @@ Documenta en `PreProcess/README.md` el layout real que encontraste (nombres, nº
 ## Lectura de un snapshot en MATLAB
 
 ```matlab
-% Un fichero = 2560 muestras de un sensor. Usa readtable (nunca csvread).
-T = readtable(fullfile(bearingDir, 'Bearing1_1_1.txt'), 'ReadVariableNames', false);
-signal = T{:, 1};
+% Un fichero = 2.560 muestras × 6 columnas; las señales están en 5 y 6.
+T = readtable(fullfile(bearingDir, 'acc_00001.csv'), 'ReadVariableNames', false);
+signalH = T{:,5};
+signalV = T{:,6};
 ```
 
-Ojo: el último fichero de cada rodamiento suele estar **truncado** (menos de 2560 muestras). Valida siempre la longitud antes de operar con ventanas o FFT.
+No asumas que el último CSV está truncado. Verifica `height(T)` en cada fichero; en `Bearing1_3` el último tiene 2.560 filas.
 
 ## Ground truth del RUL
 
@@ -99,15 +101,15 @@ rulSeconds = (N - i) * dt;     % RUL en segundos
 rulSteps   = N - i;            % RUL en número de snapshots
 ```
 
-- Solo es válido para rodamientos con **fallo completo** (training).
-- Para el **test truncado**, el RUL real no es observable: el challenge original lo publicaba en el fichero `RUL_FEMTO.txt`. Si tu partición local no lo incluye, dilo explícitamente y evalúa sobre validation.
-- Al construir la tabla de modelado, el RUL debe **decrecer** snapshot a snapshot dentro de cada rodamiento. Verifícalo: es un control de coherencia cheap que detecta errores de indexado.
+- Solo es válido para `Learning_set/` y `Full_Test_Set/` (trayectorias completas).
+- `Test_set/` no tiene etiqueta oficial: no hay `RUL_FEMTO.txt` en esta descarga. No inventes el RUL de test; documenta la limitación y evalúa sobre `Full_Test_Set/` o define un protocolo explícito.
+- No uses `Full_Test_Set/` como validación y `Test_set/` como test: comparten los mismos 11 rodamientos (fuga de identidad).
+- Al construir la tabla de modelado, el RUL debe **decrecer** snapshot a snapshot dentro de cada rodamiento. Verifícalo: es un control de coherencia barato que detecta errores de indexado.
 
-## Estructura canónica del conjunto original (referencia)
+## Estructura real de esta descarga
 
-El challenge original organizaba los datos así (compruébalo contra tu partición):
+- `Learning_set/` — 6 rodamientos completos, 8.384 CSV.
+- `Full_Test_Set/` — 11 rodamientos completos, 19.523 CSV.
+- `Test_set/` — prefijo truncado de los mismos 11 rodamientos, 15.685 CSV; sin etiquetas RUL.
 
-- `Learning_set/` — rodamientos con fallo completo (6 usados en el challenge).
-- `Full_Test_Set/` — 11 rodamientos con datos truncados, más `RUL_FEMTO.txt` con las etiquetas reales.
-
-Tu partición local (Training / Validation / Test) es una reorganización: la asignación rodamiento → partición puede ser distinta de la del challenge. **Documenta cuál es la asignación real**, porque condiciona el split y, por tanto, la validez de los resultados.
+La asignación rodamiento → partición condiciona el split y la validez de los resultados. Documenta qué rodamientos entran en train, validation y test antes de implementar el preprocesamiento.
