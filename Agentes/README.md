@@ -104,9 +104,10 @@ Esto evita que un agente "arregle" datos o que un modelo se contamine con inform
 ## Qué necesitan los colaboradores
 
 1. **Clonar el repo** (la configuración viene dentro).
-2. **Tener MATLAB R2026b** instalado y la extensión oficial "MATLAB" de MathWorks en VS Code.
-3. **Descargar el dataset** por su cuenta en `10. FEMTO Bearing/` (ver `README.md` raíz): no se versiona por tamaño.
-4. **Reiniciar opencode** tras el pull: la configuración se carga al arrancar, no en caliente.
+2. **Instalar opencode** (https://opencode.ai) y autenticarse con un proveedor de modelo; la configuración se carga al arrancar.
+3. **Instalar MATLAB R2026b** + **Signal Processing Toolbox** + **Statistics and Machine Learning Toolbox** + la extensión oficial "MATLAB" de MathWorks en VS Code.
+4. **Descargar el dataset** y extraerlo **en `10. FEMTO Bearing/`** según `README.md` raíz: `Learning_set/`, `Full_Test_Set/` y `Test_set/` (no se versiona). No extraigas los zips anidados de `Test_set.zip`.
+5. **Reiniciar opencode** tras el pull: la configuración se carga al arrancar, no en caliente.
 
 > Si usas Claude Code o Cursor, `CLAUDE.md` hace de puente hacia las mismas reglas.
 

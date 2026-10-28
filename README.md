@@ -47,7 +47,7 @@ Datos generados por la plataforma **PRONOSTIA** del instituto **FEMTO-ST** (Besa
 
 ### En qué consiste
 
-- **17 rodamientos** sometidos a ensayos de degradación acelerada **hasta el fallo real** (fallos naturales, no inducidos artificialmente).
+- **17 rodamientos únicos**: 6 con trayectoria completa en `Learning_set` y 11 en `Full_Test_Set`; `Test_set` contiene versiones truncadas de esos mismos 11 rodamientos.
 - **3 condiciones de operación:**
 
   | Condición | Velocidad | Carga |
@@ -56,31 +56,49 @@ Datos generados por la plataforma **PRONOSTIA** del instituto **FEMTO-ST** (Besa
   | 2 | 1650 rpm | 4200 N |
   | 3 | 1500 rpm | 5000 N |
 
-- **2 acelerómetros** por ensayo (horizontal y vertical), muestreo a **25,6 kHz** → 10 registros de 2560 muestras (0,1 s cada uno) por snapshot, **cada 10 segundos** hasta el fallo.
+- **2 acelerómetros** por ensayo (horizontal y vertical), muestreo a **25,6 kHz**: cada snapshot de aceleración es **un `acc_*.csv` de 2.560 filas × 6 columnas** (4 de marca temporal + 2 señales), es decir, 0,1 s de señal; los snapshots se registran **cada 10 s** hasta el fallo.
+- **Temperatura**: no todos los rodamientos incluyen `temp_*.csv`; cuando existen, tienen 5 columnas (4 de marca temporal + temperatura), hasta ~600 filas y aproximadamente un fichero por minuto. **No son snapshots de vibración** y no entran en el cálculo de RUL.
 
 ### Localización y estructura de los ficheros
 
 El dataset vive **solo en local** en la carpeta raíz del proyecto:
 
-```
+```text
 10. FEMTO Bearing/
-├── FEMTOBearingDataSet.zip   # dataset original completo (~1,1 GB)
-├── Training_set.zip          # partición de entrenamiento (~134 MB)
-├── Validation_Set.zip        # partición de validación (~302 MB)
-└── Test_set.zip              # partición de test (~673 MB)
+├── FEMTOBearingDataSet.zip   # contenedor original completo (~1,1 GB)
+├── Training_set.zip          # -> Learning_set/ (~134 MB)
+├── Validation_Set.zip        # -> Full_Test_Set/ (~302 MB)
+├── Test_set.zip              # -> Test_set/ (~673 MB)
+├── Learning_set/             # 6 rodamientos · 7.534 acc + 850 temp
+├── Full_Test_Set/            # 11 rodamientos · 17.355 acc + 2.168 temp
+└── Test_set/                 # 11 rodamientos · 13.959 acc + 1.726 temp
 ```
 
-> Nota: la partición Training/Validation/Test es una **reorganización tipo Kaggle** del conjunto original del challenge (original: 6 rodamientos training conocidos + 11 test).
+Los `.zip` son el paquete de descarga; una vez extraídos pueden eliminarse, así que es normal que solo estén las carpetas.
+
+| Carpeta extraída | Rodamientos | `acc_*.csv` | `temp_*.csv` | CSV totales | Contenido |
+|---|---:|---:|---:|---:|---|
+| `Learning_set/` | 6 | 7.534 | 850 | 8.384 | Trayectorias completas hasta el fallo |
+| `Full_Test_Set/` | 11 | 17.355 | 2.168 | 19.523 | Trayectorias completas hasta el fallo |
+| `Test_set/` | 11 | 13.959 | 1.726 | 15.685 | Prefijo truncado de `Full_Test_Set` |
+
+> La partición Training/Validation/Test es una **reorganización tipo Kaggle** del conjunto original. `Test_set` no contiene rodamientos nuevos: es una versión truncada de las trayectorias de los mismos 11 rodamientos de `Full_Test_Set` (mismos valores, menos snapshots). No uses `Full_Test_Set` y `Test_set` como validación y test independientes.
 
 ### Cómo usarlo
 
-1. Descomprimir los zips necesarios dentro de `10. FEMTO Bearing/` (sin commitearlos: están en `.gitignore`).
-2. Cada rodamiento (p. ej. `Bearing1_1`) contiene, por cada snapshot, un fichero CSV por sensor (acelerómetro horizontal y vertical) con la señal cruda muestreada a 25,6 kHz.
-3. Los scripts de `EDA/`, `PreProcess/` y `Modeling/` apuntarán a esa ruta mediante un path relativo al root del proyecto.
+1. Descomprimir dentro de `10. FEMTO Bearing/`:
+   - `Training_set.zip` → `Learning_set/`
+   - `Validation_Set.zip` → `Full_Test_Set/`
+   - `Test_set.zip` → **solo** la carpeta `Test_set/`; el zip contiene además copias anidadas de `Training_set.zip` y `Validation_Set.zip` que no hay que extraer.
+2. Cada rodamiento (p. ej. `Learning_set/Bearing1_1/`) contiene un `acc_*.csv` por snapshot de aceleración: `acc_00001.csv`, `acc_00002.csv`, etc.
+3. Cada `acc_*.csv` tiene **2.560 filas × 6 columnas**, sin cabecera: las cuatro primeras columnas son la marca temporal (hora, minuto, segundo, microsegundo) y las columnas **5 y 6** son las dos señales de aceleración. Los `temp_*.csv` son registros de temperatura (~600 filas × 5 columnas) y no deben leerse como snapshots.
+4. Los scripts de `EDA/`, `PreProcess/` y `Modeling/` deben resolver la ruta de forma relativa a la raíz del repo; nunca con rutas absolutas.
+
+> **Ground truth:** no hay `RUL_FEMTO.txt` en ninguna de las tres particiones. En `Learning_set` y `Full_Test_Set` (trayectorias completas) el RUL se calcula como `(N - i) * 10 s`, donde `N` es el número de `acc_*.csv` del rodamiento e `i` va de 1 a `N`; en `Test_set` no hay etiqueta oficial, así que la evaluación final debe plantearse sobre `Full_Test_Set` o documentar explícitamente la limitación.
 
 ### ¿Por qué está excluido de git?
 
-Los zips ocupan entre **134 MB y 1,1 GB**, y GitHub rechaza archivos mayores de 100 MB. Por eso `10. FEMTO Bearing/` y `*.zip` están en `.gitignore`: el repo versiona solo el código. Para reproducir el proyecto, descarga el dataset de la entrada "10. FEMTO Bearing" en [data.phmsociety.org/nasa](https://data.phmsociety.org/nasa) y colócalo en la raíz.
+Los zips ocupan entre **134 MB y 1,1 GB**, y GitHub rechaza archivos mayores de 100 MB. Por eso `10. FEMTO Bearing/` y `*.zip` están en `.gitignore`: el repo versiona solo el código. Para reproducir el proyecto, descarga el dataset de la entrada "10. FEMTO Bearing" en [data.phmsociety.org/nasa](https://data.phmsociety.org/nasa) y colócalo en `10. FEMTO Bearing/`.
 
 ---
 
@@ -91,8 +109,9 @@ Este proyecto se desarrolla en **MATLAB R2026b** editando desde **VS Code**.
 ### Configuración (una sola vez)
 
 1. Instala la extensión oficial **"MATLAB" (MathWorks)** desde el marketplace de VS Code → conectable con MATLAB R2021a o superior (R2026b ✔).
-2. VS Code detectará automáticamente tu instalación de MATLAB (`matlab` en PATH; si no, indicar la ruta en `Settings → MATLAB > Sign In / Install path`).
-3. Opcional: crear `Bearlytics.code-workspace` con settings de indentación para `.m`.
+2. Asegúrate de que MATLAB R2026b tiene instaladas **Signal Processing Toolbox** y **Statistics and Machine Learning Toolbox**, requeridas por el pipeline.
+3. VS Code detectará automáticamente tu instalación de MATLAB (`matlab` en PATH; si no, indicar la ruta en `Settings → MATLAB > Sign In / Install path`).
+4. Opcional: crear `Bearlytics.code-workspace` con settings de indentación para `.m`.
 
 ### Cómo trabajar
 
@@ -133,12 +152,13 @@ CLAUDE.md          # puente para Claude Code / Cursor
 
 ### Cómo lo obtienen los colaboradores
 
-1. Clonar el repositorio (la configuración viene dentro).
-2. Tener MATLAB R2026b y la extensión oficial "MATLAB" de MathWorks en VS Code.
-3. Descargar el dataset en `10. FEMTO Bearing/` (no se versiona, ver guía del dataset más arriba).
-4. **Reiniciar opencode** tras el pull: la configuración se carga al arrancar, no en caliente.
+1. **Clonar el repositorio** (la configuración viene dentro).
+2. **Instalar opencode** (https://opencode.ai) y autenticarse con un proveedor de modelo; la configuración del repo se carga al arrancar.
+3. **Instalar MATLAB R2026b** + **Signal Processing Toolbox** + **Statistics and Machine Learning Toolbox** + la extensión oficial "MATLAB" de MathWorks en VS Code.
+4. **Descargar el dataset** y extraerlo **en `10. FEMTO Bearing/`** según la guía del dataset: `Learning_set/`, `Full_Test_Set/` y `Test_set/` (no se versiona). No extraigas los zips anidados de `Test_set.zip`.
+5. **Reiniciar opencode** tras el pull: la configuración se carga al arrancar, no en caliente.
 
-Detalle completo en [`Agentes/README.md`](Agentes/README.md) y [`Agentes/WORKFLOWS.md`](Agentes/WORKFLOWS.md).
+Detalle completo en [`Agentes/README.md`](Agentes/README.md), [`Agentes/WORKFLOWS.md`](Agentes/WORKFLOWS.md) y [`Agentes/GIT_WORKFLOW.md`](Agentes/GIT_WORKFLOW.md).
 
 ---
 

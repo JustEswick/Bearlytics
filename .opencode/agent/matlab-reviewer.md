@@ -23,12 +23,12 @@ Carga la skill `matlab-conventions` para aplicar los estándares del repo.
 
 1. **Correctness**
    - Off-by-one en índices de snapshots, longitudes de señal y ventanas.
-   - Manejo de señales con longitud distinta a la esperada (el último fichero de cada rodamiento suele estar truncado).
-   - Unidades y escalas: 25,6 kHz, 2560 muestras, snapshot cada 10 s.
+   - Manejo de señales con longitud distinta a la esperada (verifica `height(T)`; no asumas que el último `acc_*.csv` está truncado).
+   - Unidades y escalas: 25,6 kHz, 2.560 muestras, snapshot cada 10 s.
    - NaN, Inf y valores vacíos: ¿se propagan silenciosamente?
    - Errores lógicos en el cálculo del RUL (`(N_total - i) * 10 s`).
 2. **Rendimiento**
-   - Bucles anidados sobre rodamientos × snapshots × ficheros (esto es el cuello de botella real).
+   - Bucles anidados sobre rodamientos × snapshots (y `temp_*.csv` si aplica): es el cuello de botella real.
    - Carga repetida de los mismos CSV en bucles.
    - Crecimiento de memoria: tablas que se concatenan en bucle (`table = [table; new]`).
 3. **Estructura y datos**

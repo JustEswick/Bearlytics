@@ -1,6 +1,6 @@
 ---
 name: femto-dataset
-description: Use when working with the FEMTO/PRONOSTIA bearing dataset in Bearlytics - locating files under "10. FEMTO Bearing", reading the per-bearing CSV snapshots, knowing the sampling rate, operating conditions, snapshot cadence, and how to derive the RUL ground truth. Covers "10. FEMTO Bearing", Bearing1_1, Training_set.zip, Validation_Set.zip, Test_set.zip, RUL_FEMTO, 25.6 kHz, 2560 samples, operating condition, snapshot.
+description: Use when working with the FEMTO/PRONOSTIA bearing dataset in Bearlytics - locating files under "10. FEMTO Bearing", reading the per-bearing acc_*.csv snapshots (2,560 x 6) and optional temp_*.csv logs, knowing the sampling rate, operating conditions, snapshot cadence, the Learning_set/Full_Test_Set/Test_set partitions, and how to derive the RUL ground truth (RUL_FEMTO.txt is absent). Covers "10. FEMTO Bearing", Bearing1_1, Training_set.zip, Validation_Set.zip, Test_set.zip, 25.6 kHz, 2560 samples, operating condition, snapshot.
 license: MIT
 metadata:
   project: Bearlytics
@@ -22,11 +22,13 @@ Conocimiento de referencia del dataset que usa Bearlytics. **Verifica siempre el
 
 | Elemento | Valor |
 |---|---|
-| Rodamientos | 17 en total: 6 con fallo completo (training) + 11 truncados (test) |
+| Rodamientos | 17 únicos: 6 en `Learning_set` + 11 en `Full_Test_Set`; `Test_set` repite esos mismos 11 en versión truncada |
 | Sensores | 2 acelerómetros por rodamiento: **horizontal** y **vertical** |
 | Frecuencia de muestreo | **25 600 Hz** |
-| Muestras por fichero | **2560** (= 0,1 s a 25,6 kHz) |
-| Ficheros por snapshot | **10** por sensor (0,1 s × 10 = 1 s de señal) |
+| Muestras por `acc_*.csv` | **2 560** (= 0,1 s a 25,6 kHz) |
+| Ficheros por snapshot | **1 `acc_*.csv`** con las dos señales |
+| Columnas de `acc_*.csv` | 6: hora, minuto, segundo, microsegundo, señal H, señal V |
+| Temperatura | `temp_*.csv` aparte, solo en algunos rodamientos: 5 columnas (4 de marca temporal + temperatura), hasta ~600 filas; no son snapshots |
 | Cadencia de snapshot | cada **10 s** hasta el fallo |
 | Fallos | Reales y naturales (no se indujeron defectos) |
 
@@ -42,56 +44,68 @@ El rodamiento se codifica como `BearingX_Y`, donde `X` es la condición de opera
 
 ## Ubicación local
 
-El dataset vive **solo en local** en `10. FEMTO Bearing/` (raíz del repo) y está excluido de git:
-
-```
+```text
 10. FEMTO Bearing/
-├── FEMTOBearingDataSet.zip   # conjunto original completo (~1,1 GB)
-├── Training_set.zip          # partición de entrenamiento (~134 MB)
-├── Validation_Set.zip        # partición de validación (~302 MB)
-└── Test_set.zip              # partición de test (~673 MB)
+├── FEMTOBearingDataSet.zip   # contenedor original completo (~1,1 GB)
+├── Training_set.zip          # -> Learning_set/ (6 rodamientos)
+├── Validation_Set.zip        # -> Full_Test_Set/ (11 rodamientos)
+├── Test_set.zip              # -> Test_set/ (11 rodamientos truncados)
+├── Learning_set/             # 7.534 acc + 850 temp
+├── Full_Test_Set/            # 17.355 acc + 2.168 temp
+└── Test_set/                 # 13.959 acc + 1.726 temp
 ```
 
-Rutas relativas a la raíz del repo; nunca absolutas.
+Los `.zip` son el paquete de descarga; una vez extraídos pueden eliminarse, así que es normal que solo estén las carpetas.
+
+Los conteos distinguen `acc_*.csv` (snapshots de aceleración, 2.560 × 6) de `temp_*.csv` (temperatura, ~600 × 5). Los totales de CSV son 8.384, 19.523 y 15.685.
+
+`Test_set/` es un prefijo de `Full_Test_Set/`: los mismos 11 rodamientos en versión truncada, con menos snapshots. No es una partición independiente.
 
 ## Reglas de acceso
 
 - La carpeta es **solo lectura**: no editar, renombrar, mover ni borrar ficheros de datos.
+- Rutas relativas a la raíz del repo; nunca absolutas.
 - Nunca añadirla a git ni relajar el `.gitignore` para hacerlo.
 - No asumir nombres de ficheros ni el número de snapshots: **inspecciona** (`dir`, `unzip -l`) y documenta el layout encontrado.
 
 ## Inspección del layout (empieza siempre aquí)
 
 ```matlab
-% Listar particiones y rodamientos disponibles
-datasetRoot = fullfile(fileparts(mfilename('fullpath')), '10. FEMTO Bearing');
+% Sesión interactiva: ejecutar desde la raíz del repo.
+repoRoot = pwd;
+% En scripts, no uses pwd: deriva repoRoot desde mfilename('fullpath')
+% según la profundidad de tu carpeta de fase (ver skill matlab-conventions).
+datasetRoot = fullfile(repoRoot, '10. FEMTO Bearing');
 parts = dir(datasetRoot);
 disp({parts.name});
 
-% Listar el contenido de un rodamiento concreto (ajusta la ruta real)
-bearingDir = fullfile(datasetRoot, 'Training_set', 'Bearing1_1');
+bearingDir = fullfile(datasetRoot, 'Learning_set', 'Bearing1_1');
 if isfolder(bearingDir)
-    files = dir(fullfile(bearingDir, '*.txt'));
+    files = dir(fullfile(bearingDir, 'acc_*.csv'));
     fprintf('Ficheros: %d\n', numel(files));
     disp({files(1:min(10, end)).name});
 end
 ```
 
-Documenta en `PreProcess/README.md` el layout real que encontraste (nombres, nº de ficheros, nº de snapshots, longitud del último fichero truncado).
+Documenta en `PreProcess/README.md` el layout real que encontraste (nombres, nº de `acc_*.csv`, filas del último `acc_*.csv` y, si existe, filas del último `temp_*.csv`).
 
 ## Lectura de un snapshot en MATLAB
 
 ```matlab
-% Un fichero = 2560 muestras de un sensor. Usa readtable (nunca csvread).
-T = readtable(fullfile(bearingDir, 'Bearing1_1_1.txt'), 'ReadVariableNames', false);
-signal = T{:, 1};
+% Un acc_*.csv = 2.560 muestras × 6 columnas; las señales están en 5 y 6.
+T = readtable(fullfile(bearingDir, 'acc_00001.csv'), 'ReadVariableNames', false);
+signalH = T{:,5};
+signalV = T{:,6};
+% Los temp_*.csv son temperatura (~600 × 5), no snapshots.
 ```
 
-Ojo: el último fichero de cada rodamiento suele estar **truncado** (menos de 2560 muestras). Valida siempre la longitud antes de operar con ventanas o FFT.
+No fijes `Delimiter`: hay ficheros con `,` y con `;`, y `readtable` lo detecta.
+
+No asumas que el último `acc_*.csv` está truncado. Verifica `height(T)` en cada fichero de aceleración; en `Full_Test_Set/Bearing1_3` el último tiene 2.560 filas. Los `temp_*.csv` sí pueden ser más cortos (p. ej. 517 filas) y no son snapshots.
 
 ## Ground truth del RUL
 
-Con `N` snapshots hasta el fallo y el snapshot actual indexado como `i` (empezando en 1):
+Con `N` = número de `acc_*.csv` hasta el fallo y el snapshot actual indexado como `i` (empezando en 1):
 
 ```matlab
 dt = 10;                       % segundos entre snapshots
@@ -99,15 +113,15 @@ rulSeconds = (N - i) * dt;     % RUL en segundos
 rulSteps   = N - i;            % RUL en número de snapshots
 ```
 
-- Solo es válido para rodamientos con **fallo completo** (training).
-- Para el **test truncado**, el RUL real no es observable: el challenge original lo publicaba en el fichero `RUL_FEMTO.txt`. Si tu partición local no lo incluye, dilo explícitamente y evalúa sobre validation.
-- Al construir la tabla de modelado, el RUL debe **decrecer** snapshot a snapshot dentro de cada rodamiento. Verifícalo: es un control de coherencia cheap que detecta errores de indexado.
+- Solo es válido para `Learning_set/` y `Full_Test_Set/` (trayectorias completas).
+- `Test_set/` no tiene etiqueta oficial: no hay `RUL_FEMTO.txt` en esta descarga. No inventes el RUL de test; documenta la limitación y evalúa sobre `Full_Test_Set/` o define un protocolo explícito.
+- No uses `Full_Test_Set/` como validación y `Test_set/` como test: comparten los mismos 11 rodamientos (fuga de identidad).
+- Al construir la tabla de modelado, el RUL debe **decrecer** snapshot a snapshot dentro de cada rodamiento. Verifícalo: es un control de coherencia barato que detecta errores de indexado.
 
-## Estructura canónica del conjunto original (referencia)
+## Estructura real de esta descarga
 
-El challenge original organizaba los datos así (compruébalo contra tu partición):
+- `Learning_set/` — 6 rodamientos completos, 7.534 `acc_*.csv` + 850 `temp_*.csv` (8.384 CSV).
+- `Full_Test_Set/` — 11 rodamientos completos, 17.355 `acc_*.csv` + 2.168 `temp_*.csv` (19.523 CSV).
+- `Test_set/` — prefijo truncado de los mismos 11 rodamientos, 13.959 `acc_*.csv` + 1.726 `temp_*.csv` (15.685 CSV); sin etiquetas RUL.
 
-- `Learning_set/` — rodamientos con fallo completo (6 usados en el challenge).
-- `Full_Test_Set/` — 11 rodamientos con datos truncados, más `RUL_FEMTO.txt` con las etiquetas reales.
-
-Tu partición local (Training / Validation / Test) es una reorganización: la asignación rodamiento → partición puede ser distinta de la del challenge. **Documenta cuál es la asignación real**, porque condiciona el split y, por tanto, la validez de los resultados.
+La asignación rodamiento → partición condiciona el split y la validez de los resultados. Documenta qué rodamientos entran en train, validation y test antes de implementar el preprocesamiento.

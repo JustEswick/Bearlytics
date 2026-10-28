@@ -14,7 +14,7 @@ Salida: modelos que estiman la vida útil remanente de un rodamiento a partir de
 - **MATLAB R2026b** como único lenguaje de ejecución. Nada de Python, R, Julia o scripts de shell que reimplementen lógica de análisis.
 - **VS Code** con la extensión oficial **"MATLAB" (MathWorks)**. Ejecución por celdas (`%%`), debugging integrado.
 - Ficheros: solo `.m` (scripts y funciones) y MATLAB Notebooks `.m`. Markdown solo para documentación.
-- Toolbox de referencia: **Signal Processing** y **Statistics and Machine Learning**. Wavelet Toolbox es opcional (si no está, usar descomposición de filtros propia y documentarlo).
+- **Toolboxes requeridas**: **Signal Processing** y **Statistics and Machine Learning**. Wavelet Toolbox es opcional (si no está, usar descomposición de filtros propia y documentarlo).
 - No añadir dependencias externas, no añadir `requirements.txt` ni equivalentes, no usar `pip`.
 
 ## 3. Flujo de trabajo por fases (obligatorio)

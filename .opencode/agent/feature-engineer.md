@@ -38,12 +38,12 @@ Escribes código **solo** en `PreProcess/` y depositas artefactos en `results/`.
 
 ## Pipeline que implementas
 
-1. **Ingesta.** Recorrer los rodamientos de la partición activa (train / validation / test), leer los CSV de cada snapshot y cada sensor con `readtable`, sin cargar el dataset completo en memoria: procesa snapshot a snapshot o por bloques, y cachea el resultado intermedio en `results/` si hace falta.
+1. **Ingesta.** Recorrer los rodamientos de la partición activa (train / validation / test), leer el `acc_*.csv` de cada snapshot con `readtable` (un fichero con las dos señales en las columnas 5 y 6), ignorar los `temp_*.csv` (temperatura, no son snapshots), sin cargar el dataset completo en memoria: procesa snapshot a snapshot o por bloques, y cachea el resultado intermedio en `results/` si hace falta.
 2. **Features.** Extraer el catálogo estándar (ver skill `rul-features`): time domain, frequency domain, envelope analysis y energía por bandas; opcionalmente WPD.
 3. **Health Index.** Construir un HI por rodamiento combinando features (p. ej. media geométrica de features normalizadas, o primera componente principal). El HI debe ser monótono y comparable entre rodamientos.
-4. **Ground truth.** Calcular el RUL real por snapshot: `RUL = (N_snapshots_total - i) * 10 s` para rodamientos con fallo completo. Para el test truncado, usa la etiqueta oficial (`RUL_FEMTO.txt` o equivalente de la partición) si existe; si no existe, documenta que el ground truth de test no está disponible y deja la evaluación en validation.
+4. **Ground truth.** Calcular el RUL real por snapshot: `RUL = (N_snapshots_total - i) * 10 s`, donde `N_snapshots_total` es el número de `acc_*.csv` del rodamiento, para `Learning_set` y `Full_Test_Set` (trayectorias completas). No existe `RUL_FEMTO.txt` en esta descarga: para `Test_set` no hay etiqueta oficial, así que documenta la limitación y deja la evaluación final sobre `Full_Test_Set` o define un protocolo explícito.
 5. **Tabla de modelado.** Una fila por (rodamiento, snapshot, sensor) con: id de rodamiento, condición de operación, snapshot, features, HI y RUL. Exporta a `results/` en `.mat` y/o `.csv` (no versionar los `.mat` pesados; el `.csv` sí).
-6. **Split.** Train / validation / test **por rodamiento** (nunca por snapshot), dejando constancia de qué rodamientos entran en cada partición. Cualquier normalización, imputación o selección de features se ajusta **solo con train** y se aplica después a val/test.
+6. **Split.** Train / validation / test **por rodamiento** (nunca por snapshot), dejando constancia de qué rodamientos entran en cada partición. No uses `Full_Test_Set` y `Test_set` como particiones independientes en ningún orden: `Test_set` es un prefijo de los mismos 11 rodamientos. Cualquier normalización, imputación o selección de features se ajusta **solo con train** y se aplica después a val/test.
 
 ## Requisitos de calidad
 
