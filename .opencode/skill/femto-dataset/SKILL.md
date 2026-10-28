@@ -1,6 +1,6 @@
 ---
 name: femto-dataset
-description: Use when working with the FEMTO/PRONOSTIA bearing dataset in Bearlytics - locating files under "10. FEMTO Bearing", reading the per-bearing CSV snapshots, knowing the sampling rate, operating conditions, snapshot cadence, and how to derive the RUL ground truth. Covers "10. FEMTO Bearing", Bearing1_1, Training_set.zip, Validation_Set.zip, Test_set.zip, RUL_FEMTO, 25.6 kHz, 2560 samples, operating condition, snapshot.
+description: Use when working with the FEMTO/PRONOSTIA bearing dataset in Bearlytics - locating files under "10. FEMTO Bearing", reading the per-bearing acc_*.csv snapshots (2,560 x 6) and optional temp_*.csv logs, knowing the sampling rate, operating conditions, snapshot cadence, the Learning_set/Full_Test_Set/Test_set partitions, and how to derive the RUL ground truth (RUL_FEMTO.txt is absent). Covers "10. FEMTO Bearing", Bearing1_1, Training_set.zip, Validation_Set.zip, Test_set.zip, 25.6 kHz, 2560 samples, operating condition, snapshot.
 license: MIT
 metadata:
   project: Bearlytics
@@ -28,7 +28,7 @@ Conocimiento de referencia del dataset que usa Bearlytics. **Verifica siempre el
 | Muestras por `acc_*.csv` | **2 560** (= 0,1 s a 25,6 kHz) |
 | Ficheros por snapshot | **1 `acc_*.csv`** con las dos señales |
 | Columnas de `acc_*.csv` | 6: hora, minuto, segundo, microsegundo, señal H, señal V |
-| Temperatura | `temp_*.csv` aparte, solo en algunos rodamientos: 5 columnas (marca temporal + temperatura), hasta ~600 filas; no son snapshots |
+| Temperatura | `temp_*.csv` aparte, solo en algunos rodamientos: 5 columnas (4 de marca temporal + temperatura), hasta ~600 filas; no son snapshots |
 | Cadencia de snapshot | cada **10 s** hasta el fallo |
 | Fallos | Reales y naturales (no se indujeron defectos) |
 
@@ -55,6 +55,8 @@ El rodamiento se codifica como `BearingX_Y`, donde `X` es la condición de opera
 └── Test_set/                 # 13.959 acc + 1.726 temp
 ```
 
+Los `.zip` son el paquete de descarga; una vez extraídos pueden eliminarse, así que es normal que solo estén las carpetas.
+
 Los conteos distinguen `acc_*.csv` (snapshots de aceleración, 2.560 × 6) de `temp_*.csv` (temperatura, ~600 × 5). Los totales de CSV son 8.384, 19.523 y 15.685.
 
 `Test_set/` es un prefijo de `Full_Test_Set/`: los mismos 11 rodamientos en versión truncada, con menos snapshots. No es una partición independiente.
@@ -69,8 +71,11 @@ Los conteos distinguen `acc_*.csv` (snapshots de aceleración, 2.560 × 6) de `t
 ## Inspección del layout (empieza siempre aquí)
 
 ```matlab
-% Ejecutar desde la raíz del repo (pwd debe ser la raíz).
-datasetRoot = fullfile(pwd, '10. FEMTO Bearing');
+% Sesión interactiva: ejecutar desde la raíz del repo.
+repoRoot = pwd;
+% En scripts, no uses pwd: deriva repoRoot desde mfilename('fullpath')
+% según la profundidad de tu carpeta de fase (ver skill matlab-conventions).
+datasetRoot = fullfile(repoRoot, '10. FEMTO Bearing');
 parts = dir(datasetRoot);
 disp({parts.name});
 

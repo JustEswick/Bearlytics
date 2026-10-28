@@ -57,7 +57,7 @@ Datos generados por la plataforma **PRONOSTIA** del instituto **FEMTO-ST** (Besa
   | 3 | 1500 rpm | 5000 N |
 
 - **2 acelerómetros** por ensayo (horizontal y vertical), muestreo a **25,6 kHz**: cada snapshot de aceleración es **un `acc_*.csv` de 2.560 filas × 6 columnas** (4 de marca temporal + 2 señales), es decir, 0,1 s de señal; los snapshots se registran **cada 10 s** hasta el fallo.
-- **Temperatura**: no todos los rodamientos incluyen `temp_*.csv`; cuando existen, tienen 5 columnas (marca temporal + temperatura), hasta ~600 filas y aproximadamente un fichero por minuto. **No son snapshots de vibración** y no entran en el cálculo de RUL.
+- **Temperatura**: no todos los rodamientos incluyen `temp_*.csv`; cuando existen, tienen 5 columnas (4 de marca temporal + temperatura), hasta ~600 filas y aproximadamente un fichero por minuto. **No son snapshots de vibración** y no entran en el cálculo de RUL.
 
 ### Localización y estructura de los ficheros
 
@@ -73,6 +73,8 @@ El dataset vive **solo en local** en la carpeta raíz del proyecto:
 ├── Full_Test_Set/            # 11 rodamientos · 17.355 acc + 2.168 temp
 └── Test_set/                 # 11 rodamientos · 13.959 acc + 1.726 temp
 ```
+
+Los `.zip` son el paquete de descarga; una vez extraídos pueden eliminarse, así que es normal que solo estén las carpetas.
 
 | Carpeta extraída | Rodamientos | `acc_*.csv` | `temp_*.csv` | CSV totales | Contenido |
 |---|---:|---:|---:|---:|---|
