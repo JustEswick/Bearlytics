@@ -56,7 +56,8 @@ Datos generados por la plataforma **PRONOSTIA** del instituto **FEMTO-ST** (Besa
   | 2 | 1650 rpm | 4200 N |
   | 3 | 1500 rpm | 5000 N |
 
-- **2 acelerómetros** por ensayo (horizontal y vertical), muestreo a **25,6 kHz**: cada snapshot es **un CSV de 2.560 filas × 6 columnas** (4 de marca temporal + 2 señales), es decir, 0,1 s de señal; los snapshots se registran **cada 10 s** hasta el fallo.
+- **2 acelerómetros** por ensayo (horizontal y vertical), muestreo a **25,6 kHz**: cada snapshot de aceleración es **un `acc_*.csv` de 2.560 filas × 6 columnas** (4 de marca temporal + 2 señales), es decir, 0,1 s de señal; los snapshots se registran **cada 10 s** hasta el fallo.
+- **Temperatura**: no todos los rodamientos incluyen `temp_*.csv`; cuando existen, tienen 5 columnas (marca temporal + temperatura), hasta ~600 filas y aproximadamente un fichero por minuto. **No son snapshots de vibración** y no entran en el cálculo de RUL.
 
 ### Localización y estructura de los ficheros
 
@@ -68,18 +69,18 @@ El dataset vive **solo en local** en la carpeta raíz del proyecto:
 ├── Training_set.zip          # -> Learning_set/ (~134 MB)
 ├── Validation_Set.zip        # -> Full_Test_Set/ (~302 MB)
 ├── Test_set.zip              # -> Test_set/ (~673 MB)
-├── Learning_set/             # 6 rodamientos, 8.384 CSV
-├── Full_Test_Set/            # 11 rodamientos, 19.523 CSV
-└── Test_set/                 # 11 rodamientos, 15.685 CSV
+├── Learning_set/             # 6 rodamientos · 7.534 acc + 850 temp
+├── Full_Test_Set/            # 11 rodamientos · 17.355 acc + 2.168 temp
+└── Test_set/                 # 11 rodamientos · 13.959 acc + 1.726 temp
 ```
 
-| Carpeta extraída | Rodamientos | CSV | Contenido |
-|---|---:|---:|---|
-| `Learning_set/` | 6 | 8.384 | Trayectorias completas hasta el fallo |
-| `Full_Test_Set/` | 11 | 19.523 | Trayectorias completas hasta el fallo |
-| `Test_set/` | 11 | 15.685 | Prefijo truncado de `Full_Test_Set` |
+| Carpeta extraída | Rodamientos | `acc_*.csv` | `temp_*.csv` | CSV totales | Contenido |
+|---|---:|---:|---:|---:|---|
+| `Learning_set/` | 6 | 7.534 | 850 | 8.384 | Trayectorias completas hasta el fallo |
+| `Full_Test_Set/` | 11 | 17.355 | 2.168 | 19.523 | Trayectorias completas hasta el fallo |
+| `Test_set/` | 11 | 13.959 | 1.726 | 15.685 | Prefijo truncado de `Full_Test_Set` |
 
-> La partición Training/Validation/Test es una **reorganización tipo Kaggle** del conjunto original. `Test_set` no son rodamientos nuevos: es una versión truncada de los mismos 11 rodamientos de `Full_Test_Set` (mismo primer CSV, menos snapshots). No los uses como validación y test independientes.
+> La partición Training/Validation/Test es una **reorganización tipo Kaggle** del conjunto original. `Test_set` no contiene rodamientos nuevos: es una versión truncada de las trayectorias de los mismos 11 rodamientos de `Full_Test_Set` (mismos valores, menos snapshots). No uses `Full_Test_Set` y `Test_set` como validación y test independientes.
 
 ### Cómo usarlo
 
@@ -87,11 +88,11 @@ El dataset vive **solo en local** en la carpeta raíz del proyecto:
    - `Training_set.zip` → `Learning_set/`
    - `Validation_Set.zip` → `Full_Test_Set/`
    - `Test_set.zip` → **solo** la carpeta `Test_set/`; el zip contiene además copias anidadas de `Training_set.zip` y `Validation_Set.zip` que no hay que extraer.
-2. Cada rodamiento (p. ej. `Learning_set/Bearing1_1/`) contiene un CSV por snapshot: `acc_00001.csv`, `acc_00002.csv`, etc.
-3. Cada CSV tiene **2.560 filas × 6 columnas**, sin cabecera: las cuatro primeras son la marca temporal (hora, minuto, segundo, microsegundo) y las columnas **5 y 6** son las dos señales de aceleración.
+2. Cada rodamiento (p. ej. `Learning_set/Bearing1_1/`) contiene un `acc_*.csv` por snapshot de aceleración: `acc_00001.csv`, `acc_00002.csv`, etc.
+3. Cada `acc_*.csv` tiene **2.560 filas × 6 columnas**, sin cabecera: las cuatro primeras columnas son la marca temporal (hora, minuto, segundo, microsegundo) y las columnas **5 y 6** son las dos señales de aceleración. Los `temp_*.csv` son registros de temperatura (~600 filas × 5 columnas) y no deben leerse como snapshots.
 4. Los scripts de `EDA/`, `PreProcess/` y `Modeling/` deben resolver la ruta de forma relativa a la raíz del repo; nunca con rutas absolutas.
 
-> **Ground truth:** no hay `RUL_FEMTO.txt` en ninguna de las tres particiones. En `Learning_set` y `Full_Test_Set` (trayectorias completas) el RUL se calcula como `(N - i) * 10 s`; en `Test_set` no hay etiqueta oficial, así que la evaluación final debe plantearse sobre `Full_Test_Set` o documentar explícitamente la limitación.
+> **Ground truth:** no hay `RUL_FEMTO.txt` en ninguna de las tres particiones. En `Learning_set` y `Full_Test_Set` (trayectorias completas) el RUL se calcula como `(N - i) * 10 s`, donde `N` es el número de `acc_*.csv` del rodamiento e `i` va de 1 a `N`; en `Test_set` no hay etiqueta oficial, así que la evaluación final debe plantearse sobre `Full_Test_Set` o documentar explícitamente la limitación.
 
 ### ¿Por qué está excluido de git?
 

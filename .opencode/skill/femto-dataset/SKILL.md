@@ -22,12 +22,13 @@ Conocimiento de referencia del dataset que usa Bearlytics. **Verifica siempre el
 
 | Elemento | Valor |
 |---|---|
-| Rodamientos | 17 únicos: 6 en `Learning_set` + 11 en `Full_Test_Set`; `Test_set` repite los 11 truncados |
+| Rodamientos | 17 únicos: 6 en `Learning_set` + 11 en `Full_Test_Set`; `Test_set` repite esos mismos 11 en versión truncada |
 | Sensores | 2 acelerómetros por rodamiento: **horizontal** y **vertical** |
 | Frecuencia de muestreo | **25 600 Hz** |
-| Muestras por fichero | **2 560** (= 0,1 s a 25,6 kHz) |
-| Ficheros por snapshot | **1 CSV** con las dos señales |
-| Columnas del CSV | 6: hora, minuto, segundo, microsegundo, señal H, señal V |
+| Muestras por `acc_*.csv` | **2 560** (= 0,1 s a 25,6 kHz) |
+| Ficheros por snapshot | **1 `acc_*.csv`** con las dos señales |
+| Columnas de `acc_*.csv` | 6: hora, minuto, segundo, microsegundo, señal H, señal V |
+| Temperatura | `temp_*.csv` aparte, solo en algunos rodamientos: 5 columnas (marca temporal + temperatura), hasta ~600 filas; no son snapshots |
 | Cadencia de snapshot | cada **10 s** hasta el fallo |
 | Fallos | Reales y naturales (no se indujeron defectos) |
 
@@ -49,23 +50,26 @@ El rodamiento se codifica como `BearingX_Y`, donde `X` es la condición de opera
 ├── Training_set.zip          # -> Learning_set/ (6 rodamientos)
 ├── Validation_Set.zip        # -> Full_Test_Set/ (11 rodamientos)
 ├── Test_set.zip              # -> Test_set/ (11 rodamientos truncados)
-├── Learning_set/             # 8.384 CSV
-├── Full_Test_Set/            # 19.523 CSV
-└── Test_set/                 # 15.685 CSV
+├── Learning_set/             # 7.534 acc + 850 temp
+├── Full_Test_Set/            # 17.355 acc + 2.168 temp
+└── Test_set/                 # 13.959 acc + 1.726 temp
 ```
 
-`Test_set/` es un prefijo de `Full_Test_Set/`: mismos 11 rodamientos, menos snapshots. No es una partición independiente.
+Los conteos distinguen `acc_*.csv` (snapshots de aceleración, 2.560 × 6) de `temp_*.csv` (temperatura, ~600 × 5). Los totales de CSV son 8.384, 19.523 y 15.685.
+
+`Test_set/` es un prefijo de `Full_Test_Set/`: los mismos 11 rodamientos en versión truncada, con menos snapshots. No es una partición independiente.
 
 ## Reglas de acceso
 
 - La carpeta es **solo lectura**: no editar, renombrar, mover ni borrar ficheros de datos.
+- Rutas relativas a la raíz del repo; nunca absolutas.
 - Nunca añadirla a git ni relajar el `.gitignore` para hacerlo.
 - No asumir nombres de ficheros ni el número de snapshots: **inspecciona** (`dir`, `unzip -l`) y documenta el layout encontrado.
 
 ## Inspección del layout (empieza siempre aquí)
 
 ```matlab
-% Ejecutar desde la raíz del repo, o definir repoRoot una sola vez.
+% Ejecutar desde la raíz del repo (pwd debe ser la raíz).
 datasetRoot = fullfile(pwd, '10. FEMTO Bearing');
 parts = dir(datasetRoot);
 disp({parts.name});
@@ -78,22 +82,25 @@ if isfolder(bearingDir)
 end
 ```
 
-Documenta en `PreProcess/README.md` el layout real que encontraste (nombres, nº de ficheros, nº de snapshots, longitud del último fichero truncado).
+Documenta en `PreProcess/README.md` el layout real que encontraste (nombres, nº de `acc_*.csv`, filas del último `acc_*.csv` y, si existe, filas del último `temp_*.csv`).
 
 ## Lectura de un snapshot en MATLAB
 
 ```matlab
-% Un fichero = 2.560 muestras × 6 columnas; las señales están en 5 y 6.
+% Un acc_*.csv = 2.560 muestras × 6 columnas; las señales están en 5 y 6.
 T = readtable(fullfile(bearingDir, 'acc_00001.csv'), 'ReadVariableNames', false);
 signalH = T{:,5};
 signalV = T{:,6};
+% Los temp_*.csv son temperatura (~600 × 5), no snapshots.
 ```
 
-No asumas que el último CSV está truncado. Verifica `height(T)` en cada fichero; en `Bearing1_3` el último tiene 2.560 filas.
+No fijes `Delimiter`: hay ficheros con `,` y con `;`, y `readtable` lo detecta.
+
+No asumas que el último `acc_*.csv` está truncado. Verifica `height(T)` en cada fichero de aceleración; en `Full_Test_Set/Bearing1_3` el último tiene 2.560 filas. Los `temp_*.csv` sí pueden ser más cortos (p. ej. 517 filas) y no son snapshots.
 
 ## Ground truth del RUL
 
-Con `N` snapshots hasta el fallo y el snapshot actual indexado como `i` (empezando en 1):
+Con `N` = número de `acc_*.csv` hasta el fallo y el snapshot actual indexado como `i` (empezando en 1):
 
 ```matlab
 dt = 10;                       % segundos entre snapshots
@@ -108,8 +115,8 @@ rulSteps   = N - i;            % RUL en número de snapshots
 
 ## Estructura real de esta descarga
 
-- `Learning_set/` — 6 rodamientos completos, 8.384 CSV.
-- `Full_Test_Set/` — 11 rodamientos completos, 19.523 CSV.
-- `Test_set/` — prefijo truncado de los mismos 11 rodamientos, 15.685 CSV; sin etiquetas RUL.
+- `Learning_set/` — 6 rodamientos completos, 7.534 `acc_*.csv` + 850 `temp_*.csv` (8.384 CSV).
+- `Full_Test_Set/` — 11 rodamientos completos, 17.355 `acc_*.csv` + 2.168 `temp_*.csv` (19.523 CSV).
+- `Test_set/` — prefijo truncado de los mismos 11 rodamientos, 13.959 `acc_*.csv` + 1.726 `temp_*.csv` (15.685 CSV); sin etiquetas RUL.
 
 La asignación rodamiento → partición condiciona el split y la validez de los resultados. Documenta qué rodamientos entran en train, validation y test antes de implementar el preprocesamiento.
