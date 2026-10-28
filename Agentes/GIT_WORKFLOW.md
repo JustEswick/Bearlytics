@@ -205,12 +205,19 @@ En el ruleset, la opción **Require review from Code Owners** puede activarse pa
 Checklist para quien entra al proyecto:
 
 1. **Rol en GitHub**: *Write* (Settings → Collaborators → Invite people). Con Write puede crear ramas, pushear y abrir PRs, pero **no** puede saltarse el ruleset: el bypass es solo del owner.
-2. **Clonar el repo** y descargar el dataset en `10. FEMTO Bearing/` (no se versiona; ver `README.md` raíz).
-3. **Leer** `AGENTS.md` (reglas), este documento y `Agentes/WORKFLOWS.md` (fases y gates).
-4. **Instalar** MATLAB R2026b y la extensión oficial "MATLAB" de MathWorks en VS Code.
-5. **Primer cambio**: crear una rama `feature/<fase>-<tarea>` desde `main` actualizado y abrir un PR siguiendo la plantilla.
-6. **Revisión**: ningún collaborator aprueba su propio PR (GitHub no lo permite con la regla de *most recent reviewable push*). Revisa PRs de otras fases cuando te lo pidan; el owner revisa siempre las rutas de CODEOWNERS.
-7. **Reglas de oro**: nunca se commitea en `main`, nunca se pushea a `main`, nunca force-push a una rama compartida, y el dataset no se toca.
+2. **Clonar el repo**: `git clone https://github.com/JustEswick/Bearlytics.git`.
+3. **Instalar opencode** (https://opencode.ai) y autenticarse con un proveedor de modelo. La configuración del proyecto viene dentro del repo.
+4. **Instalar MATLAB R2026b** + **Signal Processing Toolbox** + **Statistics and Machine Learning Toolbox** + la extensión oficial "MATLAB" de MathWorks en VS Code. Verifica:
+   ```powershell
+   matlab -batch "fprintf('%d %d\n', exist('pwelch'), exist('fitlm'));"
+   ```
+   Salida esperada: `2 2` (`pwelch`, `fitlm`).
+5. **Descargar el dataset** y extraerlo **en `10. FEMTO Bearing/`** según `README.md` raíz: `Learning_set/`, `Full_Test_Set/` y `Test_set/` (no se versiona). No extraigas los zips anidados de `Test_set.zip`.
+6. **Reiniciar opencode** tras el pull: la configuración se carga al arrancar, no en caliente.
+7. **Leer** `AGENTS.md` (reglas), este documento y `Agentes/WORKFLOWS.md` (fases y gates).
+8. **Primer cambio**: crear una rama `feature/<fase>-<tarea>` desde `main` actualizado y abrir un PR siguiendo la plantilla.
+9. **Revisión**: ningún collaborator aprueba su propio PR (GitHub no lo permite con la regla de *most recent reviewable push*). Revisa PRs de otras fases cuando te lo pidan; el owner revisa siempre las rutas de CODEOWNERS.
+10. **Reglas de oro**: nunca se commitea en `main`, nunca se pushea a `main`, nunca force-push a una rama compartida, y el dataset no se toca.
 
 ## 9. Versionado por fase
 

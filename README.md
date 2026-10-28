@@ -96,7 +96,7 @@ El dataset vive **solo en local** en la carpeta raíz del proyecto:
 
 ### ¿Por qué está excluido de git?
 
-Los zips ocupan entre **134 MB y 1,1 GB**, y GitHub rechaza archivos mayores de 100 MB. Por eso `10. FEMTO Bearing/` y `*.zip` están en `.gitignore`: el repo versiona solo el código. Para reproducir el proyecto, descarga el dataset de la entrada "10. FEMTO Bearing" en [data.phmsociety.org/nasa](https://data.phmsociety.org/nasa) y colócalo en la raíz.
+Los zips ocupan entre **134 MB y 1,1 GB**, y GitHub rechaza archivos mayores de 100 MB. Por eso `10. FEMTO Bearing/` y `*.zip` están en `.gitignore`: el repo versiona solo el código. Para reproducir el proyecto, descarga el dataset de la entrada "10. FEMTO Bearing" en [data.phmsociety.org/nasa](https://data.phmsociety.org/nasa) y colócalo en `10. FEMTO Bearing/`.
 
 ---
 
@@ -107,8 +107,9 @@ Este proyecto se desarrolla en **MATLAB R2026b** editando desde **VS Code**.
 ### Configuración (una sola vez)
 
 1. Instala la extensión oficial **"MATLAB" (MathWorks)** desde el marketplace de VS Code → conectable con MATLAB R2021a o superior (R2026b ✔).
-2. VS Code detectará automáticamente tu instalación de MATLAB (`matlab` en PATH; si no, indicar la ruta en `Settings → MATLAB > Sign In / Install path`).
-3. Opcional: crear `Bearlytics.code-workspace` con settings de indentación para `.m`.
+2. Asegúrate de que MATLAB R2026b tiene instaladas **Signal Processing Toolbox** y **Statistics and Machine Learning Toolbox**, requeridas por el pipeline.
+3. VS Code detectará automáticamente tu instalación de MATLAB (`matlab` en PATH; si no, indicar la ruta en `Settings → MATLAB > Sign In / Install path`).
+4. Opcional: crear `Bearlytics.code-workspace` con settings de indentación para `.m`.
 
 ### Cómo trabajar
 
@@ -149,12 +150,13 @@ CLAUDE.md          # puente para Claude Code / Cursor
 
 ### Cómo lo obtienen los colaboradores
 
-1. Clonar el repositorio (la configuración viene dentro).
-2. Tener MATLAB R2026b y la extensión oficial "MATLAB" de MathWorks en VS Code.
-3. Descargar el dataset en `10. FEMTO Bearing/` (no se versiona, ver guía del dataset más arriba).
-4. **Reiniciar opencode** tras el pull: la configuración se carga al arrancar, no en caliente.
+1. **Clonar el repositorio** (la configuración viene dentro).
+2. **Instalar opencode** (https://opencode.ai) y autenticarse con un proveedor de modelo; la configuración del repo se carga al arrancar.
+3. **Instalar MATLAB R2026b** + **Signal Processing Toolbox** + **Statistics and Machine Learning Toolbox** + la extensión oficial "MATLAB" de MathWorks en VS Code.
+4. **Descargar el dataset** y extraerlo **en `10. FEMTO Bearing/`** según la guía del dataset: `Learning_set/`, `Full_Test_Set/` y `Test_set/` (no se versiona). No extraigas los zips anidados de `Test_set.zip`.
+5. **Reiniciar opencode** tras el pull: la configuración se carga al arrancar, no en caliente.
 
-Detalle completo en [`Agentes/README.md`](Agentes/README.md) y [`Agentes/WORKFLOWS.md`](Agentes/WORKFLOWS.md).
+Detalle completo en [`Agentes/README.md`](Agentes/README.md), [`Agentes/WORKFLOWS.md`](Agentes/WORKFLOWS.md) y [`Agentes/GIT_WORKFLOW.md`](Agentes/GIT_WORKFLOW.md).
 
 ---
 

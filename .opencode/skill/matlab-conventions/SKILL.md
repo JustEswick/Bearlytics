@@ -12,7 +12,7 @@ metadata:
 ## Stack
 
 - **MATLAB R2026b**, ejecutado desde **VS Code** con la extensión oficial **"MATLAB" (MathWorks)**.
-- Toolbox de referencia: **Signal Processing** y **Statistics and Machine Learning**. Wavelet Toolbox es opcional; si no está disponible, implementa la descomposición de forma explícita y documéntalo.
+- **Toolboxes requeridas**: **Signal Processing** y **Statistics and Machine Learning**. Wavelet Toolbox es opcional; si no está disponible, implementa la descomposición de forma explícita y documéntalo.
 - Nada de Python, R ni dependencias externas. No hay gestor de paquetes.
 
 ## Idioma
