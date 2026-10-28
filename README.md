@@ -47,7 +47,7 @@ Datos generados por la plataforma **PRONOSTIA** del instituto **FEMTO-ST** (Besa
 
 ### En qué consiste
 
-- **17 rodamientos** sometidos a ensayos de degradación acelerada **hasta el fallo real** (fallos naturales, no inducidos artificialmente).
+- **17 rodamientos únicos**: 6 con trayectoria completa en `Learning_set` y 11 en `Full_Test_Set`; `Test_set` contiene versiones truncadas de esos mismos 11 rodamientos.
 - **3 condiciones de operación:**
 
   | Condición | Velocidad | Carga |
@@ -56,27 +56,42 @@ Datos generados por la plataforma **PRONOSTIA** del instituto **FEMTO-ST** (Besa
   | 2 | 1650 rpm | 4200 N |
   | 3 | 1500 rpm | 5000 N |
 
-- **2 acelerómetros** por ensayo (horizontal y vertical), muestreo a **25,6 kHz** → 10 registros de 2560 muestras (0,1 s cada uno) por snapshot, **cada 10 segundos** hasta el fallo.
+- **2 acelerómetros** por ensayo (horizontal y vertical), muestreo a **25,6 kHz**: cada snapshot es **un CSV de 2.560 filas × 6 columnas** (4 de marca temporal + 2 señales), es decir, 0,1 s de señal; los snapshots se registran **cada 10 s** hasta el fallo.
 
 ### Localización y estructura de los ficheros
 
 El dataset vive **solo en local** en la carpeta raíz del proyecto:
 
-```
+```text
 10. FEMTO Bearing/
-├── FEMTOBearingDataSet.zip   # dataset original completo (~1,1 GB)
-├── Training_set.zip          # partición de entrenamiento (~134 MB)
-├── Validation_Set.zip        # partición de validación (~302 MB)
-└── Test_set.zip              # partición de test (~673 MB)
+├── FEMTOBearingDataSet.zip   # contenedor original completo (~1,1 GB)
+├── Training_set.zip          # -> Learning_set/ (~134 MB)
+├── Validation_Set.zip        # -> Full_Test_Set/ (~302 MB)
+├── Test_set.zip              # -> Test_set/ (~673 MB)
+├── Learning_set/             # 6 rodamientos, 8.384 CSV
+├── Full_Test_Set/            # 11 rodamientos, 19.523 CSV
+└── Test_set/                 # 11 rodamientos, 15.685 CSV
 ```
 
-> Nota: la partición Training/Validation/Test es una **reorganización tipo Kaggle** del conjunto original del challenge (original: 6 rodamientos training conocidos + 11 test).
+| Carpeta extraída | Rodamientos | CSV | Contenido |
+|---|---:|---:|---|
+| `Learning_set/` | 6 | 8.384 | Trayectorias completas hasta el fallo |
+| `Full_Test_Set/` | 11 | 19.523 | Trayectorias completas hasta el fallo |
+| `Test_set/` | 11 | 15.685 | Prefijo truncado de `Full_Test_Set` |
+
+> La partición Training/Validation/Test es una **reorganización tipo Kaggle** del conjunto original. `Test_set` no son rodamientos nuevos: es una versión truncada de los mismos 11 rodamientos de `Full_Test_Set` (mismo primer CSV, menos snapshots). No los uses como validación y test independientes.
 
 ### Cómo usarlo
 
-1. Descomprimir los zips necesarios dentro de `10. FEMTO Bearing/` (sin commitearlos: están en `.gitignore`).
-2. Cada rodamiento (p. ej. `Bearing1_1`) contiene, por cada snapshot, un fichero CSV por sensor (acelerómetro horizontal y vertical) con la señal cruda muestreada a 25,6 kHz.
-3. Los scripts de `EDA/`, `PreProcess/` y `Modeling/` apuntarán a esa ruta mediante un path relativo al root del proyecto.
+1. Descomprimir dentro de `10. FEMTO Bearing/`:
+   - `Training_set.zip` → `Learning_set/`
+   - `Validation_Set.zip` → `Full_Test_Set/`
+   - `Test_set.zip` → **solo** la carpeta `Test_set/`; el zip contiene además copias anidadas de `Training_set.zip` y `Validation_Set.zip` que no hay que extraer.
+2. Cada rodamiento (p. ej. `Learning_set/Bearing1_1/`) contiene un CSV por snapshot: `acc_00001.csv`, `acc_00002.csv`, etc.
+3. Cada CSV tiene **2.560 filas × 6 columnas**, sin cabecera: las cuatro primeras son la marca temporal (hora, minuto, segundo, microsegundo) y las columnas **5 y 6** son las dos señales de aceleración.
+4. Los scripts de `EDA/`, `PreProcess/` y `Modeling/` deben resolver la ruta de forma relativa a la raíz del repo; nunca con rutas absolutas.
+
+> **Ground truth:** no hay `RUL_FEMTO.txt` en ninguna de las tres particiones. En `Learning_set` y `Full_Test_Set` (trayectorias completas) el RUL se calcula como `(N - i) * 10 s`; en `Test_set` no hay etiqueta oficial, así que la evaluación final debe plantearse sobre `Full_Test_Set` o documentar explícitamente la limitación.
 
 ### ¿Por qué está excluido de git?
 
