@@ -47,7 +47,7 @@ Cada fase vive en su propia rama `feature/<fase>-<tarea>` y llega a `main` media
 1. Ingesta snapshot a snapshot con `readtable`, sin cargar todo en memoria.
 2. Extracción de features (time/frequency domain, envelope, WPD opcional).
 3. Construcción del Health Index monótono y comparable entre rodamientos.
-4. Ground truth: `RUL = (N_snapshots - i) * 10 s`; para el test truncado, etiqueta oficial si existe.
+4. Ground truth: `RUL = (N_snapshots - i) * 10 s`, donde `N_snapshots` es el número de `acc_*.csv`; `Test_set` no tiene etiqueta oficial en esta descarga.
 5. Tabla de modelado en `results/` (una fila por rodamiento × snapshot × sensor).
 6. Split train/validation/test **por rodamiento**, con la asignación documentada.
 

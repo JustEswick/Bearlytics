@@ -13,7 +13,7 @@ Alcance de esta petición: $ARGUMENTS
 2. **Ingesta**: recorre la partición activa, snapshot a snapshot, leyendo con `readtable` sin cargar todo en memoria. Cachea intermedios en `results/` si hace falta.
 3. **Features** (ver skill `rul-features`): time domain, frequency domain, envelope analysis y energía por bandas; WPD si hay Wavelet Toolbox.
 4. **Health Index**: HI por rodamiento (media geométrica de features normalizadas o primera componente principal), monótono y comparable entre rodamientos.
-5. **Ground truth**: `RUL = (N_snapshots_total - i) * 10 s` para rodamientos con fallo completo; para el test truncado, usa la etiqueta oficial si existe y documenta si no.
+5. **Ground truth**: `RUL = (N_snapshots_total - i) * 10 s`, donde `N_snapshots_total` es el número de `acc_*.csv`, para `Learning_set` y `Full_Test_Set` (trayectorias completas); `Test_set` no tiene etiqueta oficial en esta descarga, así que documenta la limitación y evalúa sobre `Full_Test_Set` o define un protocolo explícito.
 6. **Tabla de modelado**: una fila por (rodamiento, snapshot, sensor) con id, condición, snapshot, features, HI y RUL. Exporta a `results/` (`.csv` versionable, `.mat` ignorado por git).
 7. **Split**: train / validation / test **por rodamiento**, con la lista de rodamientos de cada partición documentada. Todo ajuste (normalización, imputación, selección) se hace solo con train.
 
