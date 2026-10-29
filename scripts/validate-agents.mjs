@@ -14,7 +14,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const read = (p) => fs.readFileSync(p, "utf8").replace(/^\uFEFF/, "");
+const read = (p) => fs.readFileSync(p, "utf8").replace(/^\uFEFF/, "").replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 
 const AGENT_KEYS = new Set([
   "name", "model", "variant", "description", "mode", "hidden", "color",
