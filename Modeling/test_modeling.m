@@ -199,6 +199,57 @@ verifyError(testCase, @() bearlytics.model.predictRulFromArtifact(makeArtifact()
     table(1, 'VariableNames', {'a'})), 'bearlytics:model:schema');
 end
 
+%% Índice de salud y modelo por etapas
+
+function testHealthIndexIsRelativeToInitialReference(testCase)
+% RMS H constante 1 y después 4; RMS V constante: HI = 0 y luego log(4).
+trace = table([1; 1; 1; 4; 4], [2; 2; 2; 2; 2], 'VariableNames', {'rmsHMean', 'rmsVMean'});
+hi = bearlytics.computeHealthIndex(trace, 3);
+verifyEqual(testCase, hi, [0; 0; 0; log(4); log(4)], 'AbsTol', 1e-12);
+% La escala absoluta no importa: multiplicar el RMS no cambia el HI.
+scaled = trace;
+scaled{:, :} = 7 * scaled{:, :};
+verifyEqual(testCase, bearlytics.computeHealthIndex(scaled, 3), hi, 'AbsTol', 1e-12);
+end
+
+function testHealthIndexIsCausal(testCase)
+% Referencia expansiva: el HI de un prefijo es el mismo que en la serie completa.
+trace = table([2; 1; 3; 5; 8; 6], [1; 1; 2; 1; 3; 2], 'VariableNames', {'rmsHMean', 'rmsVMean'});
+full = bearlytics.computeHealthIndex(trace, 4);
+verifyEqual(testCase, full(1), 0, 'AbsTol', 1e-12);
+for k = 1:height(trace)
+    verifyEqual(testCase, bearlytics.computeHealthIndex(trace(1:k, :), 4), full(1:k), 'AbsTol', 1e-12);
+end
+verifyError(testCase, @() bearlytics.computeHealthIndex(table([1; 0], [1; 1], ...
+    'VariableNames', {'rmsHMean', 'rmsVMean'}), 2), 'MATLAB:computeHealthIndex:expectedPositive');
+end
+
+function testFirstPredictingTimeRequiresPersistence(testCase)
+hi = [0; 1; 0; 1; 1; 1];
+verifyEqual(testCase, detectFirstPredictingTime(hi, 0.5, 1), 2);
+verifyEqual(testCase, detectFirstPredictingTime(hi, 0.5, 3), 6);
+verifyTrue(testCase, isnan(detectFirstPredictingTime(hi, 2, 1)));
+end
+
+function testHealthStageModelFitAndPredictByHand(testCase)
+% Ver valores esperados en el comentario de makeHealthStageTrain.
+trainTable = makeHealthStageTrain();
+params = struct('threshold', 0.7, 'persistence', 2, 'referenceSnapshots', 3, ...
+    'quantile', 0.5, 'snapshotIntervalSeconds', 10);
+model = fitHealthStageModel(trainTable, params);
+verifyEqual(testCase, model.healthyRulSeconds, 40, 'AbsTol', 1e-12);
+verifyEqual(testCase, model.degradationSeconds, 20, 'AbsTol', 1e-12);
+verifyEqual(testCase, model.nDetected, 1);
+
+% Rodamiento A desordenado: la salida se alinea con las filas de entrada.
+evalTable = trainTable(trainTable.bearing == "A", :);
+order = [10; 3; 8; 1; 5; 9; 2; 7; 4; 6];
+[rulPred, ~, fpt] = predictHealthStageModel(model, evalTable(order, :));
+expected = [40; 40; 40; 40; 40; 40; 40; 20; 10; 0];
+verifyEqual(testCase, rulPred, expected(order), 'AbsTol', 1e-12);
+verifyEqual(testCase, fpt, 8 * ones(10, 1));
+end
+
 %% loadFold
 
 function testLoadFoldAcceptsValidFold(testCase)
@@ -265,6 +316,20 @@ verifyError(testCase, @() loadFold("Bearing1_2", 3, root), ...
 end
 
 %% Fixtures sintéticos (solo contratos; no son resultados FEMTO)
+
+function trainTable = makeHealthStageTrain()
+% A: 10 snapshots, RMS H pasa de 1 a 4 en el 7.º -> HI = log(4) > 0,7 desde
+%    el 7.º; con persistencia 2 el FPT es el 8.º. Filas sanas: RUL 90..30;
+%    RUL en el FPT = 20.
+% B: 6 snapshots sin cambio -> sin FPT; filas sanas: RUL 50..0.
+% Mediana de las 13 RUL sanas = 40; mediana de las RUL en el FPT = 20.
+bearing = [repmat("A", 10, 1); repmat("B", 6, 1)];
+snapshotIndex = [(1:10)'; (1:6)'];
+rulSeconds = [(10 - (1:10)') * 10; (6 - (1:6)') * 10];
+rmsHMean = [ones(6, 1); 4 * ones(4, 1); ones(6, 1)];
+rmsVMean = ones(16, 1);
+trainTable = table(bearing, snapshotIndex, rulSeconds, rmsHMean, rmsVMean);
+end
 
 function artifact = makeArtifact()
 % Artefacto mínimo con 2 predictores y valores elegidos para calcular a mano.

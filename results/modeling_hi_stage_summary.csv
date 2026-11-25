@@ -1,0 +1,3 @@
+protocol,model,split,nBearings,nEvaluated,score,rmse,mae
+LOBO-TRAJ,hi_stage_rul,validation,6,7528,0.195518287561814,5239.17961944537,4517.19851764558
+LOBO-TRAJ,hi_stage_rul,test,11,17344,0.110763278860553,6947.68293773636,6117.08658411624
