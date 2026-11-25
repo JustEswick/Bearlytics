@@ -1,9 +1,9 @@
-function allowed = authorize(role, action)
-%AUTHORIZE Evalúa una política RBAC mínima con denegación por defecto.
-%   INPUTS: rol y acción ya verificados por una capa de autenticación
-%   confiable. OUTPUT: logical escalar. Roles desconocidos, acciones
-%   desconocidas y entradas no escalares se deniegan.
-%   Esta función NO autentica identidades ni debe exponerse como gateway.
+function allowed = isActionAllowed(role, action)
+%ISACTIONALLOWED Evalúa si un rol autenticado puede realizar una acción.
+%   INPUTS: role y action ya verificados por una capa de autenticación
+%   confiable. OUTPUT: logical escalar. Roles o acciones desconocidos se
+%   deniegan. Esta función solo aplica autorización RBAC: no inicia sesión,
+%   valida identidad ni debe exponerse como gateway.
 
 if ~isscalar(role) || ~isscalar(action) || ismissing(string(role)) || ...
         ismissing(string(action))

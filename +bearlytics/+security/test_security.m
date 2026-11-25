@@ -45,17 +45,17 @@ verifyError(testCase, @() bearlytics.security.openArtifact(sealed, uint8(0:31)),
 end
 
 function testRbacAllowsOnlyExplicitPermissions(testCase)
-verifyTrue(testCase, bearlytics.security.authorize("viewer", "predictions:read"));
-verifyFalse(testCase, bearlytics.security.authorize("viewer", "predictions:run"));
-verifyTrue(testCase, bearlytics.security.authorize("analyst", "predictions:run"));
-verifyFalse(testCase, bearlytics.security.authorize("analyst", "models:publish"));
-verifyTrue(testCase, bearlytics.security.authorize("model_maintainer", "models:publish"));
-verifyFalse(testCase, bearlytics.security.authorize("unknown", "users:manage"));
-verifyFalse(testCase, bearlytics.security.authorize("security_admin", "models:publish"));
+verifyTrue(testCase, bearlytics.security.isActionAllowed("viewer", "predictions:read"));
+verifyFalse(testCase, bearlytics.security.isActionAllowed("viewer", "predictions:run"));
+verifyTrue(testCase, bearlytics.security.isActionAllowed("analyst", "predictions:run"));
+verifyFalse(testCase, bearlytics.security.isActionAllowed("analyst", "models:publish"));
+verifyTrue(testCase, bearlytics.security.isActionAllowed("model_maintainer", "models:publish"));
+verifyFalse(testCase, bearlytics.security.isActionAllowed("unknown", "users:manage"));
+verifyFalse(testCase, bearlytics.security.isActionAllowed("security_admin", "models:publish"));
 end
 
 function testRbacRejectsMalformedRequests(testCase)
-verifyFalse(testCase, bearlytics.security.authorize(["viewer", "analyst"], "predictions:read"));
-verifyFalse(testCase, bearlytics.security.authorize("viewer", ""));
-verifyFalse(testCase, bearlytics.security.authorize("viewer", "admin:*"));
+verifyFalse(testCase, bearlytics.security.isActionAllowed(["viewer", "analyst"], "predictions:read"));
+verifyFalse(testCase, bearlytics.security.isActionAllowed("viewer", ""));
+verifyFalse(testCase, bearlytics.security.isActionAllowed("viewer", "admin:*"));
 end
