@@ -40,10 +40,10 @@ El modelado de amenazas (STRIDE + CIA+) y los controles los define el sprint 2.
 
 Trabajo ágil en 4 sprints, uno por integrante:
 
-| Sprint | Entregables | Estado (2026-11-24) |
+| Sprint | Entregables | Estado (2026-11-25) |
 |---|---|---|
-| 1 | Planteamiento y arquitectura · Dataset y preprocesamiento · Modelo + evaluación IA | EDA/Uni, EDA/Multi y PreProcess en `main`; Modeling en revisión (#11); este documento |
-| 2 | Criptografía · Autenticación/RBAC · Seguridad del gateway · STRIDE + CIA+ | En revisión (#9 documento, #10 cifrado y RBAC) |
+| 1 | Planteamiento y arquitectura · Dataset y preprocesamiento · Modelo + evaluación IA | Completado: EDA/Uni, EDA/Multi, PreProcess, Modeling, artefacto de modelo (#13), historia causal (#14) y este documento |
+| 2 | Criptografía · Autenticación/RBAC · Seguridad del gateway · STRIDE + CIA+ | En curso (#9 documento y #10 cifrado y RBAC fusionados) |
 | 3 | Pruebas y evidencias · App MATLAB (scripts) | Pendiente |
 | 4 | Reporte y presentación | Pendiente |
 
@@ -63,7 +63,7 @@ flowchart LR
         UNI["EDA/Uni<br/>features por snapshot"]
         MULTI["EDA/Multi<br/>correlación y PCA"]
         PRE["PreProcess<br/>historia causal, RUL, split, escalado"]
-        MOD["Modeling<br/>baseline y ridge, score PHM 2012"]
+        MOD["Modeling<br/>baseline, ridge e HI, score PHM 2012"]
         RES[("results/<br/>CSV y figuras versionadas")]
     end
 
@@ -107,6 +107,8 @@ Decisiones de diseño que afectan a todo el pipeline:
 ### 3.3 Estado del modelo
 
 El mejor modelo actual es una regresión ridge sobre 32 predictores. En test obtiene un score PHM 2012 de 0,1455 frente a 0,1340 de un baseline constante, con RMSE algo peor (resultados y limitaciones en `Modeling/README.md`, PR #11). Es un modelo **débil**: mientras el rodamiento está sano, su predicción es casi constante. Esto condiciona la aplicación del sprint 3, que debe mostrar la predicción con su incertidumbre y no como un dato exacto.
+
+Se probó además un modelo por etapas de salud con un índice de salud (HI) relativo al inicio de cada rodamiento, como recomendaba EDA/Multi. Duplicó el score en validación (0,1955) pero en test quedó por debajo del ridge (0,1108): con solo 6 rodamientos de selección, aprendió un patrón de la condición 2 que no se repite en test. Queda documentado como resultado negativo; el modelo exportado sigue siendo el ridge. El cálculo del HI (`bearlytics.computeHealthIndex`) puede usarse en la app como **indicador de estado** (cuánto ha cambiado la vibración respecto al inicio), no como predicción de RUL.
 
 ### 3.4 Límites de confianza
 
@@ -161,7 +163,7 @@ Flujo: `encodeModelArtifact` devuelve el payload JSON y la cabecera → `bearlyt
 ### 5.2 Aplicación: sprint 3
 
 - **Entrada:** una secuencia de snapshots de un rodamiento (o la fila de features ya calculada), con la misma ventana causal que en entrenamiento.
-- **Proceso:** calcular features con las mismas funciones de `+bearlytics/` → `bearlytics.model.predictRulFromArtifact`, que aplica el escalador del artefacto y predice. **Pendiente:** la historia causal de los predictores la calcula hoy `prepareRulTable`, que exige trayectorias completas; hace falta una función para secuencias en curso (siguiente PR del sprint 1).
+- **Proceso:** features base por snapshot (`computeTimeFeatures`) → historia causal con `bearlytics.computeCausalHistory` (#14), que funciona sobre un rodamiento en marcha y es la misma que usa PreProcess → `bearlytics.model.predictRulFromArtifact`, que aplica el escalador del artefacto y predice. Opcionalmente, `bearlytics.computeHealthIndex` como indicador de estado.
 - **Autorización:** consultar `bearlytics.security.isActionAllowed(role, action)` solo después de validar la identidad, con las acciones de la matriz del sprint 2 (`predictions:read`, `predictions:run`, `models:publish`). La identidad la aporta una capa de autenticación confiable, no la app.
 - **Evidencias:** pruebas de que la app reproduce las predicciones de `results/modeling_ridge_rul_test_predictions.csv` para el mismo artefacto.
 
@@ -173,9 +175,8 @@ Todas las cifras del reporte deben citar su fichero en `results/` o el PR donde 
 
 | Riesgo | Impacto | Mitigación |
 |---|---|---|
-| Modelo con poca capacidad predictiva en fase sana | La app puede dar una falsa sensación de precisión | Mostrar la incertidumbre; siguiente modelo con índice de salud relativo (recomendación de EDA/Multi), seleccionado solo con los 6 folds |
-| Test ya consumido | Comparaciones futuras sesgadas si se vuelve a usar para decidir | Seleccionar solo con validación; documentar cualquier reevaluación |
-| Features de inferencia solo para trayectorias completas | La app no puede predecir sobre un rodamiento en marcha | Función de historia causal sin RUL, reutilizada por PreProcess (§5.2) |
+| Modelo con poca capacidad predictiva en fase sana | La app puede dar una falsa sensación de precisión | Mostrar la incertidumbre. El modelo por índice de salud ya se probó sin mejora en test (§3.3); mejorar requiere más rodamientos o validación anidada |
+| Test usado dos veces (ridge e HI) | Comparaciones futuras sesgadas si se vuelve a usar para decidir | Validación anidada con los 6 folds; no volver a decidir con `Full_Test_Set` |
 | Proveedor de identidad y almacén de claves sin decidir | Bloquea la autenticación real en MATLAB Web App Server | Sprint 2: elegirlos y documentar la configuración del servidor |
 | Licencias de MATLAB Compiler y Web App Server | Sin ellas no se puede empaquetar ni servir la app | Confirmar disponibilidad antes del sprint 3 |
 | Servidor sin desplegar al cierre | Los controles de red quedarían solo en diseño | Declararlo en el reporte; no simular seguridad de red en MATLAB |
