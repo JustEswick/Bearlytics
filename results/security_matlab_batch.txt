@@ -1,0 +1,29 @@
+26.2.0.3386108 (R2026b)
+Commit probado: 1408d80e7d5724a3123d94bf68cc25803a7a240d
+Running bearlytics.security.test_security
+WARNING: package com.sun.awt not in java.desktop
+WARNING: package com.sun.awt not in java.desktop
+..........
+Done bearlytics.security.test_security
+__________
+
+Running pruebas_seguridad_integracion
+Integraci¢n modelo: JSON publicado, sobre v2, cabecera aprobada e inferencia de referencia.
+..RBAC: 20 combinaciones de rol y acci¢n, verificadas por ambas funciones.
+...
+Done pruebas_seguridad_integracion
+__________
+
+Running test_preprocess
+.......... ....
+Done test_preprocess
+__________
+
+Running test_modeling
+.......... .......... .........
+Done test_modeling
+__________
+
+Java 17.0.11+7-LTS-207 with Oracle Corporation Java HotSpot(TM) 64-Bit Server VM mixed mode
+TOTAL: 58 | PASARON: 58 | FALLARON: 0 | INCOMPLETAS: 0
+Codigo de salida MATLAB: 0
