@@ -1,0 +1,3 @@
+protocol,model,split,alpha,nBearings,nEvaluated,score,rmse,mae
+LOBO-TRAJ,ridge_rul,validation,10,6,7528,0.098559052254557,6348.85340670648,5575.52188547941
+LOBO-TRAJ,ridge_rul,test,10,11,17344,0.145532392100078,6707.60454502833,5915.89993199313
