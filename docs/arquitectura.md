@@ -122,6 +122,8 @@ Se probó además un modelo por etapas de salud con un índice de salud (HI) rel
 
 ### 3.5 Despliegue (decidido 2026-11-25)
 
+El sprint 3 dispone de una [app de App Designer para ejecución local](../App/README.md). El modo local usa un principal fijo de demostración y valida la cabecera del artefacto público. En la instalación verificada, la licencia de Compiler está disponible y Web App Compiler no está instalado. El empaquetado `.ctf` y las pruebas de servidor quedan pendientes.
+
 El equipo acordó servir la app del sprint 3 con **MATLAB Web App Server**. Consecuencias para la arquitectura:
 
 - **Empaquetado:** la app MATLAB se compila como web app (MATLAB Compiler) y se publica en el servidor. Requiere licencias de MATLAB Compiler y de Web App Server.
