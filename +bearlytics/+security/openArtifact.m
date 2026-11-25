@@ -2,7 +2,12 @@ function plaintext = openArtifact(sealed, key, expectedHeaderBytes)
 %OPENARTIFACT Descifra y verifica la etiqueta de un artefacto AES-256-GCM.
 %   INPUTS: struct producido por bearlytics.security.sealArtifact y la clave
 %   uint8 de 32 bytes correspondiente y expectedHeaderBytes (uint8 UTF-8)
-%   con la cabecera esperada, serializada de forma determinista.
+%   con la cabecera esperada, serializada de forma determinista desde una
+%   allowlist/configuración aprobada que incluya modelId y modelVersion.
+%   Nunca derivar expectedHeaderBytes de sealed.headerBytes: ese campo viaja
+%   con el artefacto y no es una fuente de confianza. Tras descifrar y
+%   decodificar el payload, el llamador debe comprobar que la cabecera
+%   decodificada coincide con los bytes AAD esperados.
 %   OUTPUT: bytes uint8 autenticados. Formatos o etiquetas inválidos fallan.
 
 validateattributes(key, {'uint8'}, {'vector', 'numel', 32}, mfilename, 'key');

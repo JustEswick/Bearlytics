@@ -13,7 +13,10 @@ validateattributes(plaintext, {'uint8'}, {'vector'}, mfilename, 'plaintext');
 validateattributes(key, {'uint8'}, {'vector', 'numel', 32}, mfilename, 'key');
 validateattributes(headerBytes, {'uint8'}, {'vector', 'nonempty'}, mfilename, 'headerBytes');
 
-nonce = typecast(java.security.SecureRandom().generateSeed(12), 'uint8');
+random = java.security.SecureRandom();
+nonceBytes = zeros(12, 1, 'int8');
+random.nextBytes(nonceBytes);
+nonce = typecast(nonceBytes, 'uint8');
 cipher = javax.crypto.Cipher.getInstance('AES/GCM/NoPadding');
 secretKey = javax.crypto.spec.SecretKeySpec(typecast(key(:), 'int8'), 'AES');
 parameters = javax.crypto.spec.GCMParameterSpec(128, typecast(nonce(:), 'int8'));

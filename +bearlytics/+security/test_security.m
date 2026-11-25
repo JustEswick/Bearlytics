@@ -43,6 +43,8 @@ end
 function testRejectsInvalidKeyAndEnvelope(testCase)
 verifyError(testCase, @() bearlytics.security.sealArtifact(uint8(1), uint8(1:16)), ...
     'MATLAB:sealArtifact:incorrectNumel');
+verifyError(testCase, @() bearlytics.security.sealArtifact(uint8(1), uint8(0:31)), ...
+    'MATLAB:minrhs');
 header = uint8('{"schemaVersion":1,"modelId":"test","modelVersion":"1.0.0","modelType":"ridge"}');
 sealed = bearlytics.security.sealArtifact(uint8(1), uint8(0:31), header);
 sealed.version = uint8(3);
@@ -64,4 +66,32 @@ function testRbacRejectsMalformedRequests(testCase)
 verifyFalse(testCase, bearlytics.security.isActionAllowed(["viewer", "analyst"], "predictions:read"));
 verifyFalse(testCase, bearlytics.security.isActionAllowed("viewer", ""));
 verifyFalse(testCase, bearlytics.security.isActionAllowed("viewer", "admin:*"));
+end
+
+function testAuthorizePrincipalEnforcesTrustedIdentityAndRole(testCase)
+principal = struct('authenticated', true, 'subject', "analyst-1", 'role', "analyst");
+verifyTrue(testCase, bearlytics.security.authorizePrincipal(principal, "predictions:run"));
+verifyFalse(testCase, bearlytics.security.authorizePrincipal(principal, "models:publish"));
+
+unauthenticated = principal;
+unauthenticated.authenticated = false;
+verifyFalse(testCase, bearlytics.security.authorizePrincipal(unauthenticated, "predictions:read"));
+
+nonLogicalAuthentication = principal;
+nonLogicalAuthentication.authenticated = 1;
+verifyFalse(testCase, bearlytics.security.authorizePrincipal(nonLogicalAuthentication, "predictions:read"));
+
+blankSubject = principal;
+blankSubject.subject = "  ";
+verifyFalse(testCase, bearlytics.security.authorizePrincipal(blankSubject, "predictions:read"));
+
+missingRole = rmfield(principal, 'role');
+verifyFalse(testCase, bearlytics.security.authorizePrincipal(missingRole, "predictions:read"));
+
+unknownRole = principal;
+unknownRole.role = "superuser";
+verifyFalse(testCase, bearlytics.security.authorizePrincipal(unknownRole, "predictions:read"));
+
+verifyFalse(testCase, bearlytics.security.authorizePrincipal([principal principal], "predictions:read"));
+verifyFalse(testCase, bearlytics.security.authorizePrincipal("analyst", "predictions:read"));
 end

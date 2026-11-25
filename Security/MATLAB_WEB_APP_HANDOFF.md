@@ -16,10 +16,12 @@ Este documento prepara la integración del Sprint 2 para el agente que implement
 3. Antes de habilitar una acción sensible, obtener la identidad/rol desde un contexto del servidor que MathWorks documente para la configuración desplegada. Si el contexto verificado no está disponible dentro de la app, aplicar los permisos a nivel servidor (Author/User y política de ejecución por app/carpeta) y no inventar custom claims.
 4. Para aplicar permisos de dominio, llamar `bearlytics.security.authorizePrincipal(principal, action)` solo después de construir `principal` desde esa fuente autenticada. Acciones definidas: `predictions:read`, `predictions:run`, `models:publish`, `users:manage`, `policies:manage`. Los roles y matriz están en `isActionAllowed.m`; cualquier valor desconocido se deniega.
 5. No escribir tokens, claves, secretos, datos de usuario ni contenido sensible en URLs, errores, telemetría, archivos del repo o logs de la app.
-6. Cargar solo artefactos con esquema y versión esperados. Al cifrar/abrir un modelo, usar como datos autenticados adicionales (AAD) una serialización estable de su identidad y versión, por ejemplo `model-id:<id>;version:<version>`, y exigir el mismo contexto al abrirlo. La AAD no es secreta; la clave sí.
-7. Pedir a Vault Transit una data key AES-256 envuelta; pasar la parte plaintext a `sealArtifact` solo en memoria y persistir únicamente la copia wrapped. Para abrir, verificar primero la firma, pedir a Vault la data key y luego invocar `openArtifact`.
-8. Firmar el sobre persistido con una clave ECDSA P-256 administrada por Vault Transit (SHA-256). Verificar la firma antes de descifrar; usar permisos separados para firma del build, verificación y descifrado de la app.
-9. Incluir pruebas de autorización denegada por defecto, usuario no autenticado, rol de solo lectura, usuario autorizado, cabecera/AAD incorrecta, firma inválida y artefacto alterado. No desplegar hasta que pasen pruebas en MATLAB R2026b y revisión humana.
+6. Cargar solo artefactos con esquema y versión esperados. Al producir un artefacto, obtener `[payload, headerBytes] = bearlytics.model.encodeModelArtifact(artifact)` y usar **exactamente esos bytes `headerBytes`** como AAD en `sealArtifact(payload, keyBytes, headerBytes)`. No crear una representación alternativa como `model-id:<id>;version:<version>`: debe ser el JSON de cabecera que entrega `encodeModelArtifact`.
+7. Al abrir, obtener `modelId`, `modelVersion`, `schemaVersion` y `modelType` esperados de la allowlist/configuración aprobada de la app. Construir desde esos valores confiables la cabecera JSON UTF-8 canónica con el mismo orden de campos (`schemaVersion`, `modelId`, `modelVersion`, `modelType`) y pasar esos bytes como `expectedHeaderBytes` a `openArtifact`. **Nunca** copiar `sealed.headerBytes` a `expectedHeaderBytes`. Después, pasar el plaintext a `decodeModelArtifact` y comprobar que la cabecera decodificada serializada como JSON UTF-8 coincide byte a byte con la AAD esperada.
+8. La AAD no es secreta; la clave sí. El struct v2 de `sealArtifact` solo contiene algoritmo/versión, nonce, AAD y ciphertext/tag. Guardar la data key envuelta, metadata de versión KMS y firma en un contenedor exterior versionado que defina el adaptador Vault; no asumir que esos campos ya están en el struct.
+9. Pedir a Vault Transit una data key AES-256 envuelta; pasar la parte plaintext a `sealArtifact` solo en memoria. Para abrir, verificar primero la firma del contenedor exterior, pedir a Vault la data key y luego invocar `openArtifact` con cabecera esperada de la allowlist.
+10. Firmar el contenedor persistido con una clave ECDSA P-256 administrada por Vault Transit (SHA-256). Verificar la firma antes de descifrar; usar permisos separados para firma del build, verificación y descifrado de la app.
+11. Incluir pruebas de autorización denegada por defecto, usuario no autenticado, rol de solo lectura, usuario autorizado, cabecera/AAD incorrecta, firma inválida y artefacto alterado. No desplegar hasta que pasen pruebas en MATLAB R2026b y revisión humana.
 
 ## Preparación del servidor (operador / administrador)
 
@@ -74,12 +76,12 @@ Usar `webapps_app_roles.json` para que el grupo administrador de despliegue teng
 
 | Amenaza | Activo / impacto | Control que debe verificarse en la integración |
 |---|---|---|
-| Suplantación (S) | identidad de usuarios; autenticación OIDC por servidor, TLS, tokens con expiración; no aceptar claims del cliente |
-| Manipulación (T) | modelo y datos; AES-GCM con AAD, validación de esquema, versión y hash del artefacto |
-| Repudio (R) | cambios/publicación; auditoría de IdP/servidor y registro de actor, acción, resultado y versión sin secretos |
-| Divulgación (I) | artefactos, secretos y logs; mínimo privilegio, cifrado, TLS, red privada y redacción de logs |
-| Denegación de servicio (D) | disponibilidad; límites de tamaño/tiempo, concurrencia controlada, monitoreo y cuotas del servidor |
-| Elevación de privilegios (E) | ejecución/publicación; separación Author/User, policy-based access, RBAC interno y denegación por defecto |
+| Suplantación (S) | Identidad de usuarios; confidencialidad y autenticidad | OIDC gestionado por servidor, TLS validado, expiración de sesión y no aceptar claims del cliente |
+| Manipulación (T) | Modelo y datos; integridad y autenticidad | AES-GCM con AAD, cabecera esperada desde allowlist, validación de esquema/versión y firma del contenedor |
+| Repudio (R) | Cambios y publicación; responsabilidad | Auditoría de IdP/servidor con actor, acción, resultado y versión, sin secretos |
+| Divulgación (I) | Artefactos, secretos y logs; confidencialidad | Mínimo privilegio, cifrado, TLS, red privada y redacción de logs |
+| Denegación de servicio (D) | Disponibilidad | Límites de tamaño/tiempo, concurrencia controlada, monitoreo y cuotas del servidor |
+| Elevación de privilegios (E) | Ejecución/publicación; integridad | Separación Author/User, policy-based access, RBAC interno y denegación por defecto |
 
 Verificar las propiedades CIA: **confidencialidad** (TLS, cifrado y secretos fuera de Git), **integridad** (GCM/AAD, hashes y revisión de artefactos), **disponibilidad** (capacidad, recuperación y monitoreo). Registrar también autenticidad y trazabilidad como propiedades adicionales.
 
