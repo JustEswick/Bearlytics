@@ -109,7 +109,7 @@ validationSummary = struct('nBearings', height(validation), ...
 writetable(validation, fullfile(outputDir, 'modeling_ridge_rul_validation.csv'));
 writetable(validationPredictions, ...
     fullfile(outputDir, 'modeling_ridge_rul_validation_predictions.csv'));
-plotTrajectories(validationPredictions, ...
+plotRulTrajectories(validationPredictions, ...
     fullfile(outputDir, 'modeling_ridge_rul_validation_trajectories.png'), ...
     sprintf('Ridge (alpha = %g): validación fuera de fold', alpha));
 fprintf('Alpha elegido por validación: %g (rejilla 1e-4 a 1e3).\n', alpha);
@@ -136,7 +136,7 @@ if evaluateTest
         'VariableNames', {'bearing', 'snapshotIndex', 'rulSeconds', 'rulPredSeconds'});
     writetable(test, fullfile(outputDir, 'modeling_ridge_rul_test.csv'));
     writetable(testPredictions, fullfile(outputDir, 'modeling_ridge_rul_test_predictions.csv'));
-    plotTrajectories(testPredictions, ...
+    plotRulTrajectories(testPredictions, ...
         fullfile(outputDir, 'modeling_ridge_rul_test_trajectories.png'), ...
         sprintf('Ridge (alpha = %g): Full\\_Test\\_Set, evaluado una vez', alpha));
     fprintf('Test LOBO-TRAJ (%d rodamientos de Full_Test_Set, evaluado una vez):\n', ...
@@ -160,33 +160,4 @@ end
 writetable(summaryRows, fullfile(outputDir, 'modeling_ridge_rul_summary.csv'));
 results = struct('grid', grid, 'alpha', alpha, 'validation', validation, ...
     'validationSummary', validationSummary, 'test', test, 'testSummary', testSummary);
-end
-
-function plotTrajectories(predictions, filePath, figureTitle)
-% RUL real frente a predicho, en horas, un panel por rodamiento.
-bearingNames = unique(predictions.bearing, 'stable');
-nPanels = numel(bearingNames);
-nColumns = min(4, nPanels);
-nRows = ceil(nPanels / nColumns);
-fig = figure('Theme', 'light', 'Visible', 'off', ...
-    'Position', [100 100 300 * nColumns, 240 * nRows]);
-cleanup = onCleanup(@() close(fig));
-layout = tiledlayout(fig, nRows, nColumns, 'TileSpacing', 'compact');
-title(layout, figureTitle);
-for b = 1:nPanels
-    rows = predictions.bearing == bearingNames(b);
-    ax = nexttile(layout);
-    plot(ax, (predictions.snapshotIndex(rows) - 1) * 10 / 3600, ...
-        predictions.rulSeconds(rows) / 3600, 'k-', 'LineWidth', 1.2);
-    hold(ax, 'on');
-    plot(ax, (predictions.snapshotIndex(rows) - 1) * 10 / 3600, ...
-        predictions.rulPredSeconds(rows) / 3600, '-', 'Color', [0.85 0.33 0.10]);
-    hold(ax, 'off');
-    title(ax, bearingNames(b), 'Interpreter', 'none');
-    xlabel(ax, 'Tiempo (h)');
-    ylabel(ax, 'RUL (h)');
-    grid(ax, 'on');
-end
-legend(nexttile(layout, 1), {'Real', 'Predicho'}, 'Location', 'northeast');
-exportgraphics(fig, filePath, 'Resolution', 150);
 end
