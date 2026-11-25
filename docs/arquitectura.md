@@ -79,7 +79,7 @@ flowchart LR
     DS --> UNI --> RES
     RES --> MULTI
     RES --> PRE --> MOD --> RES
-    MOD -. "artefacto de modelo (propuesto)" .-> SEAL
+    MOD -- "artefacto de modelo (JSON)" --> SEAL
     SEAL -. "artefacto sellado" .-> APP
     APP -. "futuro: a través de" .-> GW
 ```
@@ -115,7 +115,7 @@ El mejor modelo actual es una regresión ridge sobre 32 predictores. En test obt
 | Dataset local | Señales FEMTO | Nadie (solo lectura) | Fuera de Git, `.gitignore` |
 | Repositorio | Código, configuración, resultados versionados | Colaboradores vía PR | Ruleset de `main`, CODEOWNERS, CI, revisión humana |
 | Artefactos derivados no versionados | Folds (`results/preprocess/`), `.mat` | El pipeline local | `.gitignore`; regenerables |
-| Artefacto de modelo (propuesto) | Coeficientes, escalador y metadatos | Modeling | Sellado AES-256-GCM y verificación al cargar (sprint 2) |
+| Artefacto de modelo | Coeficientes, escalador y metadatos (`results/modeling_ridge_rul_model.json`) | Modeling | Validación al decodificar; sellado AES-256-GCM al distribuirlo (sprint 2) |
 | Aplicación y gateway (futuros) | Peticiones de usuarios | Usuarios autenticados | OIDC + RBAC en el gateway (sprint 2) |
 
 ## 4. Requisitos no funcionales
@@ -128,32 +128,31 @@ El mejor modelo actual es una regresión ridge sobre 32 predictores. En test obt
 | Confidencialidad | Sin secretos ni datos pesados en Git | `.gitignore`; política del sprint 2 |
 | Mantenibilidad | Funciones documentadas, una por fichero, identificadores en inglés | Revisión de PR (`AGENTS.md` §5) |
 
-## 5. Contratos entre sprints (propuesta)
+## 5. Contratos entre sprints
 
-Esta sección es una **propuesta** para coordinar sprints. Cada responsable la valida o la corrige en su PR.
+Esta sección coordina los sprints. §5.1 está acordada e implementada; el resto es **propuesta** que cada responsable valida o corrige en su PR.
 
-### 5.1 Artefacto de modelo: sprint 1 → sprints 2 y 3
+### 5.1 Artefacto de modelo: sprint 1 → sprints 2 y 3 (implementado)
 
-Hoy Modeling publica métricas y predicciones, pero **no exporta el modelo entrenado**. Para que el sprint 2 pueda sellarlo y el sprint 3 pueda usarlo en la app, se propone que Modeling exporte un struct versionado:
+Formato acordado con el sprint 2 en #12 e implementado en `+bearlytics/+model/` y `Modeling/export_ridge_model.m`. El esquema completo está en `Modeling/README.md` (*Artefacto de modelo*). Resumen:
 
 | Campo | Contenido |
 |---|---|
-| `schemaVersion` | Versión del formato del artefacto |
-| `modelType` | `"ridge_rul"` |
+| `header` | `schemaVersion`, `modelId`, `modelVersion`, `modelType`: se autentica como AAD |
 | `predictorNames` | Lista ordenada de los 32 predictores (`predictors.csv`) |
-| `scaler` | `center` y `scale` ajustados con los 6 rodamientos de `Learning_set` |
-| `intercept`, `coefficients` | Parámetros del modelo |
 | `windowSnapshots` | Ventana de historia causal (31) |
-| `trainedOn` | Rodamientos de entrenamiento y commit del código |
+| `scaler` | `center` y `scale` ajustados con los 6 rodamientos de `Learning_set` |
+| `model` | `intercept`, `coefficients`, `alpha`, `lambda` |
+| `training` | Rodamientos de entrenamiento, commit de origen y fecha UTC |
 | `metrics` | Score, RMSE y MAE de validación y test, para mostrar en la app |
 
-Flujo previsto: Modeling serializa el struct a bytes → `bearlytics.security.sealArtifact` lo cifra (#10) → se almacena junto con su hash → la app lo abre con `openArtifact`, que falla si el contenido fue alterado. La clave la suministra un gestor de secretos, nunca el repositorio (`Security/README.md`).
+Flujo: `encodeModelArtifact` devuelve el payload JSON y la cabecera → `bearlytics.security.sealArtifact` cifra el payload con AES-256-GCM, autenticando la cabecera como AAD (adaptación del sprint 2) → se almacena con su SHA-256 → la app lo abre con `openArtifact`, que falla si el contenido o la cabecera fueron alterados, y lo decodifica con `decodeModelArtifact`. La clave la suministra un gestor de secretos, nunca el repositorio (`Security/README.md`). Si el productor y el consumidor del artefacto son independientes, la etiqueta GCM no basta para autenticar al productor y hace falta además una **firma digital** (sprint 2).
 
 ### 5.2 Aplicación: sprint 3
 
 - **Entrada:** una secuencia de snapshots de un rodamiento (o la fila de features ya calculada), con la misma ventana causal que en entrenamiento.
-- **Proceso:** calcular features con las mismas funciones de `+bearlytics/` → aplicar el escalador del artefacto → predecir.
-- **Autorización:** consultar `bearlytics.security.authorize(role, action)` con las acciones de la matriz del sprint 2 (`predictions:read`, `predictions:run`, `models:publish`). La identidad la aporta una capa de autenticación confiable, no la app.
+- **Proceso:** calcular features con las mismas funciones de `+bearlytics/` → `bearlytics.model.predictRulFromArtifact`, que aplica el escalador del artefacto y predice. **Pendiente:** la historia causal de los predictores la calcula hoy `prepareRulTable`, que exige trayectorias completas; hace falta una función para secuencias en curso (siguiente PR del sprint 1).
+- **Autorización:** consultar `bearlytics.security.isActionAllowed(role, action)` solo después de validar la identidad, con las acciones de la matriz del sprint 2 (`predictions:read`, `predictions:run`, `models:publish`). La identidad la aporta una capa de autenticación confiable, no la app.
 - **Evidencias:** pruebas de que la app reproduce las predicciones de `results/modeling_ridge_rul_test_predictions.csv` para el mismo artefacto.
 
 ### 5.3 Reporte: sprint 4
@@ -166,7 +165,8 @@ Todas las cifras del reporte deben citar su fichero en `results/` o el PR donde 
 |---|---|---|
 | Modelo con poca capacidad predictiva en fase sana | La app puede dar una falsa sensación de precisión | Mostrar la incertidumbre; siguiente modelo con índice de salud relativo (recomendación de EDA/Multi), seleccionado solo con los 6 folds |
 | Test ya consumido | Comparaciones futuras sesgadas si se vuelve a usar para decidir | Seleccionar solo con validación; documentar cualquier reevaluación |
-| Artefacto de modelo aún no exportado | Bloquea la integración de los sprints 2 y 3 | Implementar §5.1 como siguiente PR de Modeling |
+| Features de inferencia solo para trayectorias completas | La app no puede predecir sobre un rodamiento en marcha | Función de historia causal sin RUL, reutilizada por PreProcess (§5.2) |
+| Destino de despliegue y proveedor OIDC/KMS sin decidir | Bloquea la autenticación y el gateway reales del sprint 2 | Decisión del equipo, pedida en #12 |
 | Sin gateway real | Los controles de red quedan en diseño | Declararlo en el reporte; no simular seguridad de red en MATLAB |
 
 ## 7. Referencias
