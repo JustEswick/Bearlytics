@@ -13,14 +13,13 @@ validateattributes(plaintext, {'uint8'}, {'vector'}, mfilename, 'plaintext');
 validateattributes(key, {'uint8'}, {'vector', 'numel', 32}, mfilename, 'key');
 validateattributes(headerBytes, {'uint8'}, {'vector', 'nonempty'}, mfilename, 'headerBytes');
 
-random = java.security.SecureRandom();
-nonceBytes = zeros(12, 1, 'int8');
-random.nextBytes(nonceBytes);
-nonce = typecast(nonceBytes, 'uint8');
 cipher = javax.crypto.Cipher.getInstance('AES/GCM/NoPadding');
 secretKey = javax.crypto.spec.SecretKeySpec(typecast(key(:), 'int8'), 'AES');
-parameters = javax.crypto.spec.GCMParameterSpec(128, typecast(nonce(:), 'int8'));
-cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, secretKey, parameters);
+cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, secretKey);
+% Dejar que el proveedor JCE genere el IV evita la conversión por copia que
+% MATLAB aplica a los arrays int8 al invocar métodos Java como nextBytes.
+nonce = typecast(cipher.getIV(), 'uint8');
+nonce = nonce(:);
 cipher.updateAAD(typecast(headerBytes(:), 'int8'));
 ciphertextAndTag = typecast(cipher.doFinal(typecast(plaintext(:), 'int8')), 'uint8');
 

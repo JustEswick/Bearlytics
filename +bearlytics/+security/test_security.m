@@ -22,6 +22,17 @@ verifyEqual(testCase, bearlytics.security.openArtifact(sealed, key, header), pla
 verifyNotEqual(testCase, sealed.nonce, zeros(12, 1, 'uint8'));
 end
 
+function testNonceIsFreshPerSeal(testCase)
+key = uint8(0:31);
+header = uint8('{"schemaVersion":1,"modelId":"test","modelVersion":"1.0.0","modelType":"ridge"}');
+plaintext = uint8('same');
+a = bearlytics.security.sealArtifact(plaintext, key, header);
+b = bearlytics.security.sealArtifact(plaintext, key, header);
+verifyNumElements(testCase, a.nonce, 12);
+verifyNotEqual(testCase, a.nonce, b.nonce);
+verifyNotEqual(testCase, a.ciphertextAndTag, b.ciphertextAndTag);
+end
+
 function testArtifactTamperingFailsAuthentication(testCase)
 key = uint8(0:31);
 header = uint8('{"schemaVersion":1,"modelId":"test","modelVersion":"1.0.0","modelType":"ridge"}');
