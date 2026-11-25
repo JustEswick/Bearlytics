@@ -162,32 +162,6 @@ results = struct('grid', grid, 'alpha', alpha, 'validation', validation, ...
     'validationSummary', validationSummary, 'test', test, 'testSummary', testSummary);
 end
 
-function [learningTable, testTable] = finalTrainingTables(fold, predictorNames, learningBearings)
-% Reajusta el escalador con los 6 rodamientos de Learning_set (sin validación)
-% a partir de features_unscaled.csv del fold y lo aplica a Full_Test_Set.
-unscaledPath = fullfile(fold.directory, "features_unscaled.csv");
-if ~isfile(unscaledPath)
-    error('train_ridge_rul:unscaledMissing', 'Falta %s.', unscaledPath);
-end
-unscaled = readtable(unscaledPath, 'TextType', 'string');
-learningTable = unscaled(unscaled.partition == "Learning_set", :);
-testTable = unscaled(unscaled.partition == "Full_Test_Set", :);
-if ~isequal(sort(unique(learningTable.bearing)), sort(learningBearings))
-    error('train_ridge_rul:learningSet', ...
-        'features_unscaled.csv no reúne exactamente los 6 rodamientos de Learning_set.');
-end
-if ~isequal(sort(unique(testTable.bearing)), sort(unique(fold.test.bearing))) || ...
-        height(testTable) ~= height(fold.test)
-    error('train_ridge_rul:testSet', ...
-        'Full_Test_Set de features_unscaled.csv no coincide con test.csv del fold.');
-end
-names = cellstr(predictorNames);
-scaler = bearlytics.fitFeatureScaler(double(learningTable{:, names}));
-learningTable{:, names} = bearlytics.applyFeatureScaler(double(learningTable{:, names}), scaler);
-testTable{:, names} = bearlytics.applyFeatureScaler(double(testTable{:, names}), scaler);
-testTable = sortrows(testTable, {'bearing', 'snapshotIndex'});
-end
-
 function plotTrajectories(predictions, filePath, figureTitle)
 % RUL real frente a predicho, en horas, un panel por rodamiento.
 bearingNames = unique(predictions.bearing, 'stable');

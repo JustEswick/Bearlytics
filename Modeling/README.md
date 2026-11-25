@@ -60,9 +60,41 @@ score = promedio de A, en [0, 1]
 | `Modeling/predictRidgeRul.m` | Predicción ridge (segundos), sin recorte. |
 | `Modeling/train_ridge_rul.m` | Ridge: elige alpha con los 6 folds, figura de trayectorias y, opcional, test una vez. |
 | `Modeling/run_modeling.m` | **Punto de entrada**: ejecuta ambos modelos y escribe la tabla comparativa. |
-| `Modeling/test_modeling.m` | Pruebas con datos sintéticos y valores calculados a mano (21). |
+| `Modeling/finalTrainingTables.m` | Reajusta el escalador con los 6 de `Learning_set` y lo aplica a `Full_Test_Set`. |
+| `Modeling/export_ridge_model.m` | Exporta el modelo final como artefacto JSON versionado y verifica que reproduce el test. |
+| `+bearlytics/+model/encodeModelArtifact.m` | Artefacto → bytes UTF-8 (payload) y cabecera (para AAD). |
+| `+bearlytics/+model/decodeModelArtifact.m` | Bytes → artefacto validado; falla de forma cerrada. |
+| `+bearlytics/+model/predictRulFromArtifact.m` | Escala con el escalador del artefacto y predice la RUL. |
+| `Modeling/test_modeling.m` | Pruebas con datos sintéticos y valores calculados a mano (25). |
 
-El paquete de evaluación es `+bearlytics/+evaluation/` (en MATLAB, un subpaquete necesita su propio `+`).
+El paquete de evaluación es `+bearlytics/+evaluation/` y el de artefactos `+bearlytics/+model/` (en MATLAB, un
+subpaquete necesita su propio `+`).
+
+## Artefacto de modelo
+
+`export_ridge_model` reentrena el modelo final con la **alpha congelada** (10) y lo exporta a
+`results/modeling_ridge_rul_model.json` (3.332 bytes), con su SHA-256 en `modeling_ridge_rul_model.sha256`.
+No reevalúa métricas de test: comprueba que el artefacto decodificado reproduce las 17.355 predicciones de
+`modeling_ridge_rul_test_predictions.csv` (diferencia máxima 4,91·10⁻¹¹ s, tolerancia 10⁻⁶ s).
+
+| Campo | Contenido |
+|---|---|
+| `header` | `schemaVersion` (1), `modelId` (`bearlytics-ridge-rul`), `modelVersion` (`1.0.0`), `modelType` (`ridge_rul`) |
+| `predictorNames` | Los 32 predictores, en el orden de las columnas de entrada |
+| `windowSnapshots` | Ventana de historia causal (31) |
+| `scaler` | `center` y `scale` ajustados con los 6 rodamientos de `Learning_set` |
+| `model` | `intercept`, `coefficients`, `alpha`, `lambda`, objetivo y unidades (s) |
+| `training` | Partición, rodamientos, filas, protocolo, commit de origen y fecha UTC |
+| `metrics` | Score PHM 2012, RMSE y MAE de validación y test publicados |
+
+- **Formato JSON, no MAT:** legible, estable entre versiones y no ejecuta código al cargarse.
+- **Integración con el sprint 2:** el payload es lo que se cifra con `bearlytics.security.sealArtifact`; la
+  cabecera que devuelve `encodeModelArtifact` está pensada para autenticarse como **AAD**. Al abrirlo, la cabecera del
+  payload debe coincidir con la AAD. El cifrado, las claves y la firma son responsabilidad del sprint 2.
+- **No es determinista byte a byte:** `createdUtc` y `sourceCommit` cambian el SHA-256 en cada exportación;
+  los parámetros del modelo sí son reproducibles.
+- **Uso:** `a = bearlytics.model.decodeModelArtifact(bytes); rul = bearlytics.model.predictRulFromArtifact(a, features)`,
+  con `features` sin escalar (mismas columnas que `features_unscaled.csv`).
 
 ## Modelo ridge
 
@@ -107,6 +139,12 @@ con el escalador de train del fold. Objetivo: `rulSeconds`.
    addpath('Modeling'); comparison = run_modeling(31, true);
    ```
 
+5. Exportar el artefacto del modelo final (requiere el paso 4):
+
+   ```matlab
+   addpath('Modeling'); artifact = export_ridge_model;
+   ```
+
 Equivalente en terminal: `matlab -batch "addpath('Modeling'); run_modeling(31, true);"`.
 
 ## Salidas
@@ -118,6 +156,7 @@ En `results/` (se reescriben al repetir la ejecución):
 - `modeling_ridge_rul_{validation,test,summary,grid}.csv`: ridge por fold / rodamiento de test / resumen / rejilla.
 - `modeling_ridge_rul_{validation,test}_predictions.csv`: RUL real y predicho por snapshot.
 - `modeling_ridge_rul_{validation,test}_trajectories.png`: RUL real frente a predicho por rodamiento.
+- `modeling_ridge_rul_model.json` y `.sha256`: artefacto del modelo final y su hash (`export_ridge_model`).
 
 ## Resultados
 
@@ -173,6 +212,10 @@ Figuras: [validación](../results/modeling_ridge_rul_validation_trajectories.png
 - **Test ya consumido:** cualquier modelo nuevo debe seleccionarse solo con los 6 folds; volver a usar
   `Full_Test_Set` para decidir invalida la comparación. Las cifras de test de esta tabla quedan como
   referencia de la configuración congelada.
+- **Features para inferencia en vivo:** los 32 predictores incluyen historia causal (media, desviación y
+  pendiente en 31 snapshots), que hoy calcula `bearlytics.prepareRulTable`. Esa función exige trayectorias
+  completas porque también etiqueta la RUL. La app del sprint 3 necesita una función que calcule la misma
+  historia sobre una secuencia en curso y sin RUL, y que PreProcess reutilice para no divergir.
 - **Constante por snapshot:** la media de RUL pondera por snapshot, así que los rodamientos largos pesan más.
 - **No es el score oficial del challenge**, que evalúa un único punto por rodamiento en el corte del test.
 - **Cifras:** todas salen de `matlab -batch "addpath('Modeling'); run_modeling(31, true);"` (2026-11-24).
