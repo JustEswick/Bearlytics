@@ -23,6 +23,7 @@ Bearlytics/
 │   └── Multi/          # EDA multivariado
 ├── PreProcess/         # Pre-procesamiento y extracción de features
 ├── Modeling/           # Modelos de RUL
+├── Security/           # Diseño de seguridad, controles y threat model del sprint 2
 ├── results/            # Figuras y tablas generadas
 ├── +bearlytics/        # Funciones reutilizables (paquete MATLAB)
 ├── AGENTS.md           # Reglas del proyecto para agentes de IA
@@ -34,6 +35,8 @@ Bearlytics/
 ├── 10. FEMTO Bearing/  # Dataset (solo local, excluido de git)
 └── README.md
 ```
+
+El diseño del sprint de seguridad está en [`Security/README.md`](Security/README.md).
 
 ---
 
