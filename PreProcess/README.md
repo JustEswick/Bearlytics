@@ -66,6 +66,11 @@ final pertenece a Modeling y no forma parte de este entregable.
    inicial de 31 snapshots abarca hasta 300 s entre extremos; es una elección
    inicial sin optimizar. Las ventanas iniciales se acortan, el primer std y
    la primera pendiente valen cero. `historyCount` registra el soporte real.
+   El cálculo vive en `bearlytics.computeCausalHistory`, que no necesita RUL,
+   partición ni `N`: sirve igual para trayectorias completas y para un
+   rodamiento todavía en marcha (inferencia del sprint 3). Al ser
+   retrospectivo, el valor de una fila no cambia al llegar snapshots nuevos;
+   las pruebas lo verifican y comprueban que coincide con `prepareRulTable`.
 4. RUL se calcula solo para trayectorias completas como `(N-i)*10` segundos;
    termina en cero. `N` no es predictor. Sin auditoría cruda, la cadencia y
    el endpoint se asumen a partir del CSV del EDA; no se consideran verificados
@@ -151,3 +156,15 @@ La verificación cruda no se ejecutó porque el dataset no está incluido. El
 gate multivariado sigue abierto por los pendientes documentados en
 `EDA/Multi/README.md`; este preprocesamiento continúa siendo preliminar y no
 habilita Modeling.
+
+### Evidencia: historia causal reutilizable (2026-11-25)
+
+La historia causal se extrajo de `prepareRulTable` a `bearlytics.computeCausalHistory`
+sin cambiar el resultado. En MATLAB R2026b, `runtests('PreProcess/test_preprocess.m')`
+da **14 pruebas pasadas, 0 fallidas** (10 previas y 4 nuevas: coincidencia con
+`prepareRulTable`, prefijo igual a trayectoria completa, valores calculados a mano con
+otra cadencia y rechazo de entradas inválidas). Se regeneraron los 6 folds con
+`run_preprocess(<rodamiento>, 31)` y los 36 CSV (`features_unscaled`, `train`,
+`validation`, `test`, `scaler` y `predictors` de cada fold) tienen el **mismo SHA-256**
+que antes del cambio. Desde #8 el gate de EDA/Multi está cerrado; la nota anterior
+sobre el gate abierto queda como histórico de esa revisión.
