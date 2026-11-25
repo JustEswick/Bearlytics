@@ -11,6 +11,8 @@
 /EDA/                   @JustEswick
 /PreProcess/            @JustEswick
 /Modeling/              @JustEswick
+/App/                   @JustEswick
+/+bearlytics/+app/      @JustEswick
 
 # Configuracion de agentes de IA: cambios sensibles, siempre revisados.
 /.opencode/             @JustEswick

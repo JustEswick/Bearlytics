@@ -13,14 +13,14 @@ Salida: modelos que estiman la vida útil remanente de un rodamiento a partir de
 
 - **MATLAB R2026b** como único lenguaje de ejecución. Nada de Python, R, Julia o scripts de shell que reimplementen lógica de análisis.
 - **VS Code** con la extensión oficial **"MATLAB" (MathWorks)**. Ejecución por celdas (`%%`), debugging integrado.
-- Ficheros: solo `.m` (scripts y funciones) y MATLAB Notebooks `.m`. Markdown solo para documentación.
+- Ficheros: `.m` para scripts, funciones y notebooks, y `.mlapp` para App Designer. Markdown solo para documentación.
 - **Toolboxes requeridas**: **Signal Processing** y **Statistics and Machine Learning**. Wavelet Toolbox es opcional (si no está, usar descomposición de filtros propia y documentarlo).
 - No añadir dependencias externas, no añadir `requirements.txt` ni equivalentes, no usar `pip`.
 
 ## 3. Flujo de trabajo por fases (obligatorio)
 
 ```
-EDA/Uni  ->  EDA/Multi  ->  PreProcess  ->  Modeling
+EDA/Uni  ->  EDA/Multi  ->  PreProcess  ->  Modeling  ->  App
 ```
 
 El proyecto avanza por fases y cada una tiene un **gate**. No se escribe código de la fase siguiente hasta que la anterior esté validada y documentada.
@@ -31,6 +31,7 @@ El proyecto avanza por fases y cada una tiene un **gate**. No se escribe código
 | EDA multivariada | `EDA/Multi/` | Correlaciones / PCA con interpretación sobre la degradación | Requerido antes de empezar la fase siguiente |
 | Pre-procesamiento | `PreProcess/` | Tabla de features reproducible, split train/val/test sin leakage | Requerido antes de empezar la fase siguiente |
 | Modelado | `Modeling/` | Baseline + modelo evaluado con score PHM 2012 y tablas comparativas | Requerido antes de empezar la fase siguiente |
+| Aplicación MATLAB | `App/` | App Designer, inferencia verificada con datos de referencia y evidencia de pruebas de seguridad | Requerido para integrar la app |
 
 Un agente que reciba una petición de una fase posterior debe primero verificar el gate anterior y, si no está cumplido, decirlo y proponer el trabajo de la fase previa.
 
@@ -86,7 +87,7 @@ main (protegida)
 
 | Prefijo | Uso | Fases válidas |
 |---|---|---|
-| `feature/` | Trabajo nuevo de una fase del pipeline | `eda-uni`, `eda-multi`, `preprocess`, `modeling` |
+| `feature/` | Trabajo nuevo de una fase del pipeline | `eda-uni`, `eda-multi`, `preprocess`, `modeling`, `app` |
 | `fix/` | Corrección de un fallo | — |
 | `exp/` | Experimento de modelado que no entra en `main` | — |
 | `docs/` | Solo documentación | — |

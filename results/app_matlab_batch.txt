@@ -1,0 +1,34 @@
+MATLAB R2026b - salida de las suites ejecutadas con matlab -batch
+Running test_app_logic
+Referencia FEMTO: 200 filas, max dif 3.82e-11 s, RUL 2.68 h, HI 0.117
+WARNING: package com.sun.awt not in java.desktop
+WARNING: package com.sun.awt not in java.desktop
+.........
+Done test_app_logic
+__________
+
+Running bearlytics.security.test_security
+..........
+Done bearlytics.security.test_security
+__________
+
+Running pruebas_seguridad_integracion
+Integración modelo: JSON publicado, sobre v2, cabecera aprobada e inferencia de referencia.
+..RBAC: 20 combinaciones de rol y acción, verificadas por ambas funciones.
+...
+Done pruebas_seguridad_integracion
+__________
+
+Running test_preprocess
+.......... ....
+Done test_preprocess
+__________
+
+Running test_modeling
+.......... .......... .........
+Done test_modeling
+__________
+
+TOTAL 67 | PASARON 67 | FALLARON 0 | INCOMPLETAS 0
+
+Interfaz: archivo MLAPP, lectura de metadatos, inferencia de 200 capturas y dos vistas verificados.

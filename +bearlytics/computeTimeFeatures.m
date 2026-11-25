@@ -54,8 +54,15 @@ if rmsValue == 0
         'El RMS es cero: la señal es constante o nula.');
 end
 
-kurtosisValue = kurtosis(x);
-skewnessValue = skewness(x);
+if exist('kurtosis', 'file') == 2 && exist('skewness', 'file') == 2
+    kurtosisValue = kurtosis(x);
+    skewnessValue = skewness(x);
+else
+    % Sin la toolbox, usar los mismos momentos normalizados (flag = 1).
+    standardized = (x - mean(x)) / sqrt(mean((x - mean(x)) .^ 2));
+    kurtosisValue = mean(standardized .^ 4);
+    skewnessValue = mean(standardized .^ 3);
+end
 crestFactor = max(abs(x)) / rmsValue;
 
 if ~isfinite(rmsValue) || ~isfinite(kurtosisValue) || ...
