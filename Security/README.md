@@ -136,6 +136,22 @@ disp(table(results));
 assertSuccess(results);
 ```
 
+## Evidencia de ejecución
+
+MATLAB R2026b con Java 17.0.11 ejecutó **58 pruebas, todas aprobadas**. El registro identifica el commit `1408d80` del PR #18. Su contenido coincide con el del commit `b4933ec` integrado en `main`.
+
+| Suite | Aprobadas |
+| --- | ---: |
+| Seguridad | 10 |
+| Integración de seguridad | 5 |
+| Preprocesamiento | 14 |
+| Modelado y evaluación | 29 |
+
+- [Registro de MATLAB](../results/security_matlab_batch.txt)
+- [Resultados por prueba en CSV](../results/security_test_results.csv)
+
+Para reproducir las 58 pruebas, añade `TestSuite.fromFile('PreProcess/test_preprocess.m')` y `TestSuite.fromFile('Modeling/test_modeling.m')` a `suite` en el bloque anterior antes de ejecutarla.
+
 ## Referencias oficiales
 
 - [MathWorks: autenticación OIDC/LDAP](https://www.mathworks.com/help/webappserver/ug/authentication.html)
