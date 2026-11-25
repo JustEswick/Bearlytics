@@ -25,6 +25,7 @@ Bearlytics/
 ├── Modeling/           # Modelos de RUL
 ├── results/            # Figuras y tablas generadas
 ├── +bearlytics/        # Funciones reutilizables (paquete MATLAB)
+├── docs/               # Planteamiento y arquitectura (docs/arquitectura.md)
 ├── AGENTS.md           # Reglas del proyecto para agentes de IA
 ├── opencode.json       # Configuración de agentes (permisos, agente por defecto)
 ├── .opencode/          # Agentes, comandos y skills de IA
