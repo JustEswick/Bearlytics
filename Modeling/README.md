@@ -6,7 +6,7 @@ Modelos de RUL: baselines + modelo predictivo final, con métricas tipo PHM 2012
 > evaluados en validación (6 folds) y, **una única vez**, en test (`Full_Test_Set`). La configuración
 > (ventana 31, 32 predictores, rejilla de alpha) quedó congelada antes de mirar el test. Las cifras de
 > la sección *Resultados* salen de `results/modeling_comparison.csv` y de la salida de `run_modeling`.
-> El orden de gates exige mergear este trabajo después del PR de cierre de EDA/Multi.
+> Parte de `main` con el gate de EDA/Multi ya cerrado (#8).
 
 ## Dependencias
 
