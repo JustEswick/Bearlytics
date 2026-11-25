@@ -136,8 +136,18 @@ se quiere conservar antes de repetirla. No se permite reemplazar una salida
 auditada por modo sin auditoría. Ejecutar los seis folds requiere generar y
 revisar cada uno; no se afirma que ya se hayan ejecutado.
 
-**MATLAB y el dataset crudo no están disponibles en la sesión de desarrollo.**
-No se ejecutaron las pruebas MATLAB ni el pipeline; no se publican tablas,
-auditorías ni resultados inventados. El chequeo estático no sustituye a
-`matlab -batch`. Para cerrar la fase faltan ejecutar y revisar las salidas,
-resolver pendientes multivariados y documentar el gate; no iniciar Modeling.
+### Evidencia de esta revisión (2026-11-24)
+
+En MATLAB R2026b se ejecutó `runtests('PreProcess/test_preprocess.m')`:
+**10 pruebas pasaron, 0 fallaron**. También se ejecutó `run_preprocess` con
+la tabla versionada `results/eda_uni_features.csv`, sin auditoría de señales
+crudas. La salida informó 6.663 snapshots de train (5 rodamientos), 871 de
+validación (1 rodamiento) y 17.355 de test (11 rodamientos), con 32
+predictores y una ventana de 31 snapshots. La corrida generó archivos bajo
+`results/preprocess/Bearing1_2_w31/`; son salidas reproducibles y no forman
+parte de este cambio.
+
+La verificación cruda no se ejecutó porque el dataset no está incluido. El
+gate multivariado sigue abierto por los pendientes documentados en
+`EDA/Multi/README.md`; este preprocesamiento continúa siendo preliminar y no
+habilita Modeling.
