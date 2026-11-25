@@ -1,11 +1,15 @@
 % RMS horizontal frente a RMS vertical.
 
 
-nombreRodamiento = "Bearing3_2";
+if ~exist('bearingName', 'var')
+    bearingName = "Bearing3_2";
+end
+nombreRodamiento = bearingName;
 carpetaScript = fileparts(mfilename('fullpath'));
-archivoCSV = fullfile(carpetaScript, 'eda_uni_features.csv');
+repoRoot = fileparts(fileparts(carpetaScript));
+archivoCSV = fullfile(repoRoot, 'results', 'eda_uni_features.csv');
 guardarResultados = true;
-carpetaResultados = fullfile(carpetaScript, 'results');
+carpetaResultados = fullfile(repoRoot, 'results', 'eda_multi');
 
 if ~isfile(archivoCSV)
     error('Bearlytics:ArchivoNoEncontrado', ...
@@ -41,7 +45,7 @@ fprintf('Rodamiento: %s | Snapshots seleccionados: %d\n', ...
     nombreRodamiento, height(rodamiento));
 
 % Cada punto es un snapshot; su color representa el tiempo.
-fig = figure('Color', 'w', 'Position', [100 100 800 500]);
+fig = figure('Theme', 'light', 'Color', 'w', 'Position', [100 100 800 500]);
 ax = axes(fig);
 scatter(ax, rodamiento.rmsH, rodamiento.rmsV, 12, ...
     rodamiento.elapsedHours, 'filled', ...
