@@ -70,14 +70,72 @@ El eje y se ajusta automáticamente en cada figura; las alturas no son comparabl
 
 ### 2.5 Reproducción
 
-Desde la raíz del repositorio:
+Hay dos scripts y conviene ejecutarlos en este orden:
 
-```matlab
+| Script | Qué hace | Tiempo orientativo |
+|---|---|---|
+| `EDA/Uni/test_eda_uni.m` | Pruebas de carga de snapshots y de las 4 features. Termina con `TODO OK`. | Segundos |
+| `EDA/Uni/run_eda_uni.m` | Recorre los 24.889 snapshots y escribe las tablas y las 68 figuras en `results/`. | ~13 min (761,7 s y 799,1 s en dos ejecuciones verificadas con R2026b) |
+
+**Requisitos previos** (comunes a las tres formas):
+
+- MATLAB R2026b con Signal Processing Toolbox y Statistics and Machine Learning Toolbox.
+- Dataset extraído en `10. FEMTO Bearing/` (raíz del repo) con `Learning_set/` y `Full_Test_Set/`. Si falta, los scripts se detienen con `No se encuentra el dataset FEMTO en: ...`.
+
+Los dos scripts calculan sus rutas a partir de su propia ubicación (`mfilename('fullpath')`) y añaden al path lo que necesitan. Por eso **no hace falta estar en la raíz del repo ni ejecutar `addpath` antes**: basta con llamarlos con su ruta.
+
+#### Opción A: desde la ventana de comandos de MATLAB
+
+1. Abre MATLAB R2026b.
+2. Sitúate en la raíz del repo, en la barra de carpeta actual o con `cd`, por ejemplo:
+
+   ```matlab
+   cd('C:\ruta\a\Bearlytics')   % sustituye por la ruta de tu clon
+   ```
+
+3. Ejecuta las pruebas y, si terminan en `TODO OK`, el análisis:
+
+   ```matlab
+   run('EDA/Uni/test_eda_uni.m')
+   run('EDA/Uni/run_eda_uni.m')
+   ```
+
+Desde cualquier otra carpeta funciona igual pasando la ruta completa del script, por ejemplo
+`run(fullfile('C:\ruta\a\Bearlytics', 'EDA', 'Uni', 'run_eda_uni.m'))`.
+
+#### Opción B: desde el editor de MATLAB o desde VS Code
+
+1. Abre `EDA/Uni/test_eda_uni.m` y pulsa **Run** (F5 en el editor de MATLAB). En VS Code, con la extensión oficial
+   "MATLAB" de MathWorks conectada a R2026b, usa el botón **Run File** (▷) de la esquina superior derecha.
+2. Repite con `EDA/Uni/run_eda_uni.m`.
+
+Ejecuta siempre el **fichero completo**. `run_eda_uni.m` está dividido en secciones (`%%`), pero las secciones
+posteriores usan variables que crea la primera (rutas, carpetas y especificación de las features); ejecutar una
+sección suelta en una sesión limpia falla por variables no definidas.
+
+#### Opción C: desde la terminal (sin abrir la interfaz)
+
+Desde la raíz del repo:
+
+```powershell
 matlab -batch "run('EDA/Uni/test_eda_uni.m')"
 matlab -batch "run('EDA/Uni/run_eda_uni.m')"
 ```
 
-El script de pruebas recorre los casos de carga y cálculo de features y termina imprimiendo `TODO OK` si todos pasan. La última ejecución completa verificada procesó 24.889 snapshots en **761,7 s (12,70 min)** con MATLAB R2026b; el tiempo depende del equipo.
+#### Qué esperar
+
+- Las pruebas imprimen `== Pruebas EDA univariada ==`, los casos 1 a 7 y `TODO OK`.
+- El análisis escribe en `results/` `eda_uni_features.csv`, `eda_uni_summary.csv` y las 68 figuras
+  `eda_uni_<bearing>_<feature>_trend.png`. Si ya existían, se sobrescriben: los CSV salen idénticos y las
+  figuras se redibujan, por lo que `git status` puede marcar los PNG como modificados aunque muestren lo mismo.
+  No hace falta commitear esos PNG si no cambió el código.
+- Como son scripts (no funciones), las variables que crean quedan en el workspace de MATLAB al terminar.
+- El dataset solo se lee; ningún script lo modifica.
+
+**Verificación (2026-11-25, MATLAB R2026b):** con la carpeta actual fuera del repo (`tempdir`), `run(<ruta completa>/test_eda_uni.m)`
+terminó en `TODO OK` y `run(<ruta completa>/run_eda_uni.m)` procesó 24.889 snapshots de 17 rodamientos y generó 68 figuras en
+799,1 s. `eda_uni_features.csv` y `eda_uni_summary.csv` salieron idénticos a los versionados. Las pruebas también pasan
+con `run('EDA/Uni/test_eda_uni.m')` desde la raíz.
 
 ## 3. Cobertura por rodamiento
 
