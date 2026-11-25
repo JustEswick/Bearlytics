@@ -106,3 +106,19 @@ verifyFalse(testCase, bearlytics.security.authorizePrincipal(unknownRole, "predi
 verifyFalse(testCase, bearlytics.security.authorizePrincipal([principal principal], "predictions:read"));
 verifyFalse(testCase, bearlytics.security.authorizePrincipal("analyst", "predictions:read"));
 end
+
+function testEquivalentTextRepresentations(testCase)
+verifyTrue(testCase, bearlytics.security.isActionAllowed('viewer', "predictions:read"));
+verifyTrue(testCase, bearlytics.security.isActionAllowed("viewer", 'predictions:read'));
+verifyFalse(testCase, bearlytics.security.isActionAllowed('viewer', 'models:publish'));
+
+principal = struct('authenticated', true, 'subject', 'test-user', 'role', 'viewer');
+verifyTrue(testCase, bearlytics.security.authorizePrincipal(principal, 'predictions:read'));
+verifyFalse(testCase, bearlytics.security.authorizePrincipal(principal, 'models:publish'));
+end
+
+function testRbacRejectsNonScalarTextAndNonText(testCase)
+verifyFalse(testCase, bearlytics.security.isActionAllowed(['viewer'; 'viewer'], "predictions:read"));
+verifyFalse(testCase, bearlytics.security.isActionAllowed("viewer", {'predictions:read'}));
+verifyFalse(testCase, bearlytics.security.isActionAllowed("viewer", string(missing)));
+end
