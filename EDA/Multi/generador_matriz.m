@@ -1,11 +1,15 @@
 % Matriz de correlacion de Spearman de las ocho caracteristicas.
 
 
-nombreRodamiento = "Bearing3_2";
+if ~exist('bearingName', 'var')
+    bearingName = "Bearing3_2";
+end
+nombreRodamiento = bearingName;
 carpetaScript = fileparts(mfilename('fullpath'));
-archivoCSV = fullfile(carpetaScript, 'eda_uni_features.csv');
+repoRoot = fileparts(fileparts(carpetaScript));
+archivoCSV = fullfile(repoRoot, 'results', 'eda_uni_features.csv');
 guardarResultados = true;
-carpetaResultados = fullfile(carpetaScript, 'results');
+carpetaResultados = fullfile(repoRoot, 'results', 'eda_multi');
 
 if ~isfile(archivoCSV)
     error('Bearlytics:ArchivoNoEncontrado', ...
@@ -59,55 +63,59 @@ tablaMatriz = array2table(matriz, 'VariableNames', columnas, ...
 disp(array2table(round(matriz, 2), 'VariableNames', columnas, ...
     'RowNames', columnas));
 
-fig = figure('Color', 'w', 'Position', [100 100 1000 800]);
-ax = axes(fig, 'Position', [0.15 0.23 0.70 0.68]);
-img = imagesc(ax, matriz, [-1 1]);
-% Las correlaciones indefinidas quedan como celdas grises, no como ceros.
-img.AlphaData = ~isnan(matriz);
-ax.Color = [0.90 0.90 0.90];
-axis(ax, 'image');
-ax.XTick = 1:numel(columnas);
-ax.YTick = 1:numel(columnas);
-ax.XTickLabel = columnas;
-ax.YTickLabel = columnas;
-ax.TickLabelInterpreter = 'none';
-ax.XTickLabelRotation = 90;
-ax.FontSize = 11;
+if ~exist('exportSpearmanFigure', 'var') || exportSpearmanFigure
+    fig = figure('Theme', 'light', 'Color', 'w', 'Position', [100 100 1000 800]);
+    ax = axes(fig, 'Position', [0.15 0.23 0.70 0.68]);
+    img = imagesc(ax, matriz, [-1 1]);
+    % Las correlaciones indefinidas quedan como celdas grises, no como ceros.
+    img.AlphaData = ~isnan(matriz);
+    ax.Color = [0.90 0.90 0.90];
+    axis(ax, 'image');
+    ax.XTick = 1:numel(columnas);
+    ax.YTick = 1:numel(columnas);
+    ax.XTickLabel = columnas;
+    ax.YTickLabel = columnas;
+    ax.TickLabelInterpreter = 'none';
+    ax.XTickLabelRotation = 90;
+    ax.FontSize = 11;
 
-% Paleta divergente: azul negativo, blanco en cero y rojo positivo.
-% Es una aproximacion visual; no reproduce exactamente coolwarm.
-mapa = interp1([0 0.5 1], ...
-    [0.23 0.30 0.75; 1 1 1; 0.71 0.02 0.15], linspace(0, 1, 257));
-colormap(ax, mapa);
-colorbar(ax);
-title(ax, sprintf('Correlacion de Spearman - %s', nombreRodamiento), ...
-    'Interpreter', 'none');
-for fila = 1:numel(columnas)
-    for columna = 1:numel(columnas)
-        valor = matriz(fila, columna);
-        colorTexto = [0 0 0];
-        if isnan(valor)
-            etiqueta = 'NaN';
-        else
-            etiqueta = sprintf('%.2f', valor);
-            if abs(valor) > 0.65
-                colorTexto = [1 1 1];
+    % Paleta divergente: azul negativo, blanco en cero y rojo positivo.
+    % Es una aproximacion visual; no reproduce exactamente coolwarm.
+    mapa = interp1([0 0.5 1], ...
+        [0.23 0.30 0.75; 1 1 1; 0.71 0.02 0.15], linspace(0, 1, 257));
+    colormap(ax, mapa);
+    colorbar(ax);
+    title(ax, sprintf('Correlacion de Spearman - %s', nombreRodamiento), ...
+        'Interpreter', 'none');
+    for fila = 1:numel(columnas)
+        for columna = 1:numel(columnas)
+            valor = matriz(fila, columna);
+            colorTexto = [0 0 0];
+            if isnan(valor)
+                etiqueta = 'NaN';
+            else
+                etiqueta = sprintf('%.2f', valor);
+                if abs(valor) > 0.65
+                    colorTexto = [1 1 1];
+                end
             end
+            text(ax, columna, fila, etiqueta, ...
+                'HorizontalAlignment', 'center', 'Color', colorTexto, ...
+                'FontSize', 10, 'Interpreter', 'none');
         end
-        text(ax, columna, fila, etiqueta, ...
-            'HorizontalAlignment', 'center', 'Color', colorTexto, ...
-            'FontSize', 10, 'Interpreter', 'none');
+    end
+    if guardarResultados
+        archivoFigura = fullfile(carpetaResultados, ...
+            sprintf('eda_multi_%s_spearman.png', nombreRodamiento));
+        exportgraphics(fig, archivoFigura, 'Resolution', 150);
+        fprintf('Figura guardada: %s\n', archivoFigura);
     end
 end
 
 if guardarResultados
-    archivoFigura = fullfile(carpetaResultados, ...
-        sprintf('eda_multi_%s_spearman.png', nombreRodamiento));
     archivoMatriz = fullfile(carpetaResultados, ...
         sprintf('eda_multi_%s_spearman.csv', nombreRodamiento));
-    exportgraphics(fig, archivoFigura, 'Resolution', 150);
     writetable(tablaMatriz, archivoMatriz, 'WriteRowNames', true);
-    fprintf('Figura guardada: %s\n', archivoFigura);
     fprintf('Matriz guardada: %s\n', archivoMatriz);
 end
 fprintf('Finalizado: %s.m\n', mfilename);
