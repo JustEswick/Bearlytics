@@ -111,6 +111,49 @@ verifyEqual(testCase, perBearing.mae, 5, 'AbsTol', 1e-12);
 verifyEqual(testCase, summary.nExcluded, 1);
 end
 
+%% Ridge
+
+function testRidgeWithoutPenaltyRecoversLinearRelation(testCase)
+% y = 100 + 30*x1 - 20*x2 exacto: con lambda = 0 se recupera sin error.
+x1 = [-1; 0; 1; 2; -2; 0.5];
+x2 = [1; -1; 0; 0.5; 2; -0.5];
+trainTable = table(x1, x2, 100 + 30 * x1 - 20 * x2, ...
+    'VariableNames', {'x1', 'x2', 'rulSeconds'});
+model = fitRidgeRul(trainTable, ["x1"; "x2"], 0);
+verifyEqual(testCase, model.intercept, 100, 'AbsTol', 1e-9);
+verifyEqual(testCase, model.coefficients, [30; -20], 'AbsTol', 1e-9);
+evalTable = table(3, 1, 'VariableNames', {'x1', 'x2'});
+verifyEqual(testCase, predictRidgeRul(model, evalTable), 170, 'AbsTol', 1e-9);
+end
+
+function testRidgeDoesNotPenalizeIntercept(testCase)
+% Con lambda enorme los coeficientes tienden a 0 y la predicción a la media
+% de train (que es lo que hace el baseline), no a 0.
+x1 = [-1; 0; 1; 2];
+trainTable = table(x1, [10; 20; 30; 60], 'VariableNames', {'x1', 'rulSeconds'});
+model = fitRidgeRul(trainTable, "x1", 1e12);
+verifyEqual(testCase, model.coefficients, 0, 'AbsTol', 1e-8);
+verifyEqual(testCase, model.intercept, 30, 'AbsTol', 1e-6);
+end
+
+function testRidgeShrinksCoefficients(testCase)
+% Con columna centrada de norma S, beta = S*b/(S+lambda): S = 2, lambda = 2 -> mitad.
+x1 = [-1; 0; 1];
+trainTable = table(x1, 50 + 10 * x1, 'VariableNames', {'x1', 'rulSeconds'});
+model = fitRidgeRul(trainTable, "x1", 2);
+verifyEqual(testCase, model.coefficients, 5, 'AbsTol', 1e-12);
+verifyEqual(testCase, model.intercept, 50, 'AbsTol', 1e-12);
+end
+
+function testRidgeRejectsMissingPredictor(testCase)
+trainTable = table([1; 2], [3; 4], 'VariableNames', {'x1', 'rulSeconds'});
+verifyError(testCase, @() fitRidgeRul(trainTable, ["x1"; "x2"], 1), ...
+    'bearlytics:fitRidgeRul:schema');
+model = fitRidgeRul(trainTable, "x1", 1);
+verifyError(testCase, @() predictRidgeRul(model, table([1; 2], 'VariableNames', {'x2'})), ...
+    'bearlytics:predictRidgeRul:schema');
+end
+
 %% loadFold
 
 function testLoadFoldAcceptsValidFold(testCase)
