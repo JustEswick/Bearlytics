@@ -82,27 +82,13 @@ for b = 1:numel(bearingNames)
             'La cadencia/origen temporal de %s no coincide con 10 s.', bearingNames(b));
     end
     modelTable.rulSeconds(rows) = (n - current.snapshotIndex) * dt;
-    modelTable.historyCount(rows) = min((1:n)', windowSnapshots);
 
-    % Ventana retrospectiva [w-1,0]. La pendiente es una regresión local
-    % contra el índice; convertir de unidades/snapshot a unidades/segundo.
-    index = (0:n-1)';
-    window = [windowSnapshots - 1, 0];
-    meanIndex = movmean(index, window, 'Endpoints', 'shrink');
-    indexVariance = movmean(index .^ 2, window, 'Endpoints', 'shrink') - meanIndex .^ 2;
-    for k = 1:numel(baseNames)
-        values = double(current.(baseNames{k}));
-        trailingMean = movmean(values, window, 'Endpoints', 'shrink');
-        covariance = movmean(index .* values, window, 'Endpoints', 'shrink') ...
-            - meanIndex .* trailingMean;
-        slope = zeros(n, 1);
-        valid = indexVariance > 0;
-        slope(valid) = covariance(valid) ./ indexVariance(valid) / dt;
-        modelTable.(char(string(baseNames{k}) + "Mean"))(rows) = trailingMean;
-        modelTable.(char(string(baseNames{k}) + "Std"))(rows) = ...
-            movstd(values, window, 0, 'Endpoints', 'shrink');
-        modelTable.(char(string(baseNames{k}) + "SlopePerSecond"))(rows) = slope;
-    end
+    % La historia causal se calcula con la misma función que usa la
+    % inferencia sobre rodamientos en marcha, para que no puedan divergir.
+    history = bearlytics.computeCausalHistory(current, windowSnapshots, dt);
+    modelTable.historyCount(rows) = history.historyCount;
+    historyNames = predictorNames(numel(baseNames) + 1:end);
+    modelTable{rows, historyNames} = history{:, historyNames};
 end
 if any(~isfinite(modelTable{:, predictorNames}), 'all')
     error('bearlytics:prepareRulTable:nonFinite', ...
