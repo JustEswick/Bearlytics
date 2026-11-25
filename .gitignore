@@ -19,3 +19,6 @@ autosave/
 # Resultados pesados (las figuras .png/.pdf si se versionan)
 results/*.mat
 results/**/*.mat
+
+# Folds de PreProcess (~32 MB por fold): se regeneran con run_preprocess
+results/preprocess/
