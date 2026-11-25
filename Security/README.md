@@ -120,6 +120,22 @@ El admin provisiona Vault Transit sobre HTTPS, crea una clave simétrica AES-256
 
 Para sellar: pedir data key plaintext+wrapped a Transit, obtener `[payload, headerBytes]` de `bearlytics.model.encodeModelArtifact(artifact)` y usar esos bytes exactos con `sealArtifact(payload, keyBytes, headerBytes)`. El struct v2 devuelto solo contiene `version`, `algorithm`, `nonce`, `headerBytes` y `ciphertextAndTag`; el adaptador Vault debe guardar la data key envuelta, metadata KMS y firma en un contenedor exterior versionado. Firmar el sobre persistido exacto y limpiar el buffer local. Para abrir: validar modelo/versión contra una allowlist confiable, verificar firma ECDSA, derivar `expectedHeaderBytes` de esa configuración (nunca de `sealed.headerBytes`), pedir `decrypt` de wrapped data key y abrir con `openArtifact`. Después de `decodeModelArtifact`, comprobar que la cabecera coincide byte a byte con la AAD. Fallar cerrado ante cualquier error. Rotar versión de claves y conservar capacidad de descifrar versiones activas durante migración.
 
+## Pruebas locales en MATLAB
+
+La suite de seguridad verifica cifrado autenticado, validación de cabeceras y autorización por rol. La suite de integración usa el JSON ridge publicado y una clave de prueba para comprobar el ciclo de sellado, apertura e inferencia, el rechazo de una versión no aprobada y las 20 combinaciones de rol y acción. También comprueba la equivalencia entre texto MATLAB en formato `char` y `string` para un rol autorizado.
+
+Desde la raíz del repositorio, con MATLAB R2026b y una JVM disponible:
+
+```matlab
+addpath(pwd);
+import matlab.unittest.TestSuite
+suite = [TestSuite.fromFile('+bearlytics/+security/test_security.m'), ...
+    TestSuite.fromFile('Security/pruebas_seguridad_integracion.m')];
+results = run(suite);
+disp(table(results));
+assertSuccess(results);
+```
+
 ## Referencias oficiales
 
 - [MathWorks: autenticación OIDC/LDAP](https://www.mathworks.com/help/webappserver/ug/authentication.html)
