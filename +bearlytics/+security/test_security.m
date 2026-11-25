@@ -15,32 +15,38 @@ end
 
 function testArtifactRoundTrip(testCase)
 key = uint8(0:31);
+header = uint8('{"schemaVersion":1,"modelId":"test","modelVersion":"1.0.0","modelType":"ridge"}');
 plaintext = uint8([0 1 2 3 127 128 255]);
-sealed = bearlytics.security.sealArtifact(plaintext, key);
-verifyEqual(testCase, bearlytics.security.openArtifact(sealed, key), plaintext(:));
+sealed = bearlytics.security.sealArtifact(plaintext, key, header);
+verifyEqual(testCase, bearlytics.security.openArtifact(sealed, key, header), plaintext(:));
 verifyNotEqual(testCase, sealed.nonce, zeros(12, 1, 'uint8'));
 end
 
 function testArtifactTamperingFailsAuthentication(testCase)
 key = uint8(0:31);
-sealed = bearlytics.security.sealArtifact(uint8('model bytes'), key);
+header = uint8('{"schemaVersion":1,"modelId":"test","modelVersion":"1.0.0","modelType":"ridge"}');
+sealed = bearlytics.security.sealArtifact(uint8('model bytes'), key, header);
+verifyError(testCase, @() bearlytics.security.openArtifact(sealed, key, uint8('different-header')),...
+    'bearlytics:security:contextMismatch');
 sealed.ciphertextAndTag(1) = bitxor(sealed.ciphertextAndTag(1), uint8(1));
-verifyError(testCase, @() bearlytics.security.openArtifact(sealed, key), ...
+verifyError(testCase, @() bearlytics.security.openArtifact(sealed, key, header), ...
     'bearlytics:security:authenticationFailed');
 end
 
 function testWrongKeyFailsAuthentication(testCase)
-sealed = bearlytics.security.sealArtifact(uint8([1 2 3]), uint8(0:31));
-verifyError(testCase, @() bearlytics.security.openArtifact(sealed, uint8(1:32)), ...
+header = uint8('{"schemaVersion":1,"modelId":"test","modelVersion":"1.0.0","modelType":"ridge"}');
+sealed = bearlytics.security.sealArtifact(uint8([1 2 3]), uint8(0:31), header);
+verifyError(testCase, @() bearlytics.security.openArtifact(sealed, uint8(1:32), header), ...
     'bearlytics:security:authenticationFailed');
 end
 
 function testRejectsInvalidKeyAndEnvelope(testCase)
 verifyError(testCase, @() bearlytics.security.sealArtifact(uint8(1), uint8(1:16)), ...
     'MATLAB:sealArtifact:incorrectNumel');
-sealed = bearlytics.security.sealArtifact(uint8(1), uint8(0:31));
-sealed.version = uint8(2);
-verifyError(testCase, @() bearlytics.security.openArtifact(sealed, uint8(0:31)), ...
+header = uint8('{"schemaVersion":1,"modelId":"test","modelVersion":"1.0.0","modelType":"ridge"}');
+sealed = bearlytics.security.sealArtifact(uint8(1), uint8(0:31), header);
+sealed.version = uint8(3);
+verifyError(testCase, @() bearlytics.security.openArtifact(sealed, uint8(0:31), header), ...
     'bearlytics:security:sealedFormat');
 end
 
