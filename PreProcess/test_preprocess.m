@@ -98,6 +98,51 @@ verifyError(testCase, @() bearlytics.makeBearingSplit(data, "Bearing1_3"), ...
     'bearlytics:makeBearingSplit:validation');
 end
 
+function testCausalHistoryMatchesPrepareRulTable(testCase)
+% La función de inferencia y PreProcess producen exactamente los mismos predictores.
+input = makeFixture();
+[prepared, names] = bearlytics.prepareRulTable(input, 3);
+rows = prepared.bearing == "Bearing1_2";
+[history, historyNames] = bearlytics.computeCausalHistory(prepared(rows, :), 3);
+verifyEqual(testCase, historyNames, names);
+verifyEqual(testCase, history{:, names}, prepared{rows, names});
+verifyEqual(testCase, history.historyCount, prepared.historyCount(rows));
+end
+
+function testCausalHistoryOnPrefixEqualsFullTrajectory(testCase)
+% Un rodamiento en marcha (prefijo) obtiene los mismos valores que tendrá
+% cuando su trayectoria esté completa: no hace falta conocer N ni la RUL.
+input = makeFixture();
+input = input(input.bearing == "Bearing1_1", :);
+input.rmsH = [1; 4; 2; 8];
+[full, names] = bearlytics.computeCausalHistory(input, 3);
+for k = 1:height(input)
+    prefix = bearlytics.computeCausalHistory(input(1:k, :), 3);
+    verifyEqual(testCase, prefix{:, names}, full{1:k, names}, 'AbsTol', 1e-12);
+end
+end
+
+function testCausalHistoryKnownValuesAndInterval(testCase)
+% rmsH = [1 2 3 4], ventana 3: pendiente 1 por snapshot; con 5 s -> 0.2 por s.
+input = makeFixture();
+input = input(input.bearing == "Bearing1_1", :);
+history = bearlytics.computeCausalHistory(input, 3, 5);
+verifyEqual(testCase, history.rmsHSlopePerSecond, [0; 0.2; 0.2; 0.2], 'AbsTol', 1e-12);
+verifyEqual(testCase, history.rmsHStd, [0; std([1 2]); 1; 1], 'AbsTol', 1e-12);
+verifyEqual(testCase, history.historyCount, [1; 2; 3; 3]);
+verifyFalse(testCase, any(ismember({'rulSeconds', 'bearing', 'partition'}, ...
+    history.Properties.VariableNames)));
+end
+
+function testCausalHistoryRejectsInvalidInput(testCase)
+input = makeFixture();
+verifyError(testCase, @() bearlytics.computeCausalHistory(input(:, 1:6), 3), ...
+    'bearlytics:computeCausalHistory:schema');
+input.rmsH(2) = NaN;
+verifyError(testCase, @() bearlytics.computeCausalHistory(input, 3), ...
+    'MATLAB:computeCausalHistory:expectedFinite');
+end
+
 function testConstantPredictors(testCase)
 scaler = bearlytics.fitFeatureScaler([1, 2; 1, 4]);
 verifyEqual(testCase, scaler.scale(1), 1);
