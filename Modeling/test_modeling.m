@@ -154,6 +154,51 @@ verifyError(testCase, @() predictRidgeRul(model, table([1; 2], 'VariableNames', 
     'bearlytics:predictRidgeRul:schema');
 end
 
+%% Artefacto de modelo
+
+function testArtifactRoundTripPreservesPredictions(testCase)
+artifact = makeArtifact();
+[payload, header] = bearlytics.model.encodeModelArtifact(artifact);
+decoded = bearlytics.model.decodeModelArtifact(payload);
+verifyEqual(testCase, decoded.predictorNames, ["a"; "b"]);
+verifyEqual(testCase, decoded.header.modelId, "test-model");
+features = table([2; 4], [1; -1], 'VariableNames', {'a', 'b'});
+verifyEqual(testCase, bearlytics.model.predictRulFromArtifact(decoded, features), ...
+    bearlytics.model.predictRulFromArtifact(artifact, features), 'AbsTol', 1e-12);
+% La cabecera (AAD prevista para el sprint 2) es exactamente el JSON del header.
+verifyEqual(testCase, jsondecode(native2unicode(header', 'UTF-8')), ...
+    jsondecode(jsonencode(artifact.header)));
+end
+
+function testArtifactPredictionAppliesScalerThenModel(testCase)
+% a escalada = (2-1)/2 = 0.5; b escalada = (1-0)/1 = 1
+% RUL = 100 + 10*0.5 - 20*1 = 85
+features = table(2, 1, 'VariableNames', {'a', 'b'});
+verifyEqual(testCase, bearlytics.model.predictRulFromArtifact(makeArtifact(), features), ...
+    85, 'AbsTol', 1e-12);
+end
+
+function testArtifactRejectsUnsupportedOrInconsistentContent(testCase)
+bad = makeArtifact();
+bad.header.schemaVersion = 2;
+verifyError(testCase, @() bearlytics.model.encodeModelArtifact(bad), 'bearlytics:model:version');
+bad = makeArtifact();
+bad.model.coefficients = [1; 2; 3];
+verifyError(testCase, @() bearlytics.model.encodeModelArtifact(bad), ...
+    'MATLAB:decodeModelArtifact:incorrectNumel');
+bad = makeArtifact();
+bad.scaler.scale = [0, 1];
+verifyError(testCase, @() bearlytics.model.encodeModelArtifact(bad), ...
+    'MATLAB:decodeModelArtifact:expectedPositive');
+verifyError(testCase, @() bearlytics.model.decodeModelArtifact(uint8('no es json')'), ...
+    'bearlytics:model:format');
+end
+
+function testArtifactRejectsMissingPredictorColumn(testCase)
+verifyError(testCase, @() bearlytics.model.predictRulFromArtifact(makeArtifact(), ...
+    table(1, 'VariableNames', {'a'})), 'bearlytics:model:schema');
+end
+
 %% loadFold
 
 function testLoadFoldAcceptsValidFold(testCase)
@@ -220,6 +265,20 @@ verifyError(testCase, @() loadFold("Bearing1_2", 3, root), ...
 end
 
 %% Fixtures sintéticos (solo contratos; no son resultados FEMTO)
+
+function artifact = makeArtifact()
+% Artefacto mínimo con 2 predictores y valores elegidos para calcular a mano.
+artifact = struct();
+artifact.header = struct('schemaVersion', 1, 'modelId', "test-model", ...
+    'modelVersion', "0.0.1", 'modelType', "ridge_rul");
+artifact.predictorNames = ["a"; "b"];
+artifact.windowSnapshots = 3;
+artifact.scaler = struct('center', [1, 0], 'scale', [2, 1]);
+artifact.model = struct('intercept', 100, 'coefficients', [10; -20], ...
+    'alpha', 1, 'lambda', 4);
+artifact.training = struct('partition', "Learning_set", 'sourceCommit', "test");
+artifact.metrics = struct('validation', struct('score', 0.5));
+end
 
 function root = newFoldRoot(testCase)
 fixture = testCase.applyFixture(matlab.unittest.fixtures.TemporaryFolderFixture);
