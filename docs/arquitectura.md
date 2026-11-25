@@ -33,7 +33,7 @@ El modelado de amenazas (STRIDE + CIA+) y los controles los define el sprint 2.
 |---|---|
 | Dataset FEMTO/PRONOSTIA (IEEE PHM 2012), 17 rodamientos completos | Datos de planta reales o en streaming |
 | Features de vibración en dominio temporal, H y V | Temperatura (`temp_*.csv`), no usada para RUL |
-| Modelos de RUL evaluados con protocolo leave-one-bearing-out | Despliegue productivo de un servicio en red (no existe todavía) |
+| Modelos de RUL evaluados con protocolo leave-one-bearing-out | Despliegue productivo a escala; el despliegue previsto es MATLAB Web App Server (§3.5) |
 | Controles de seguridad sobre código, artefactos y una futura capa de entrada | Certificación de seguridad o cumplimiento normativo |
 
 ## 2. Organización y metodología
@@ -69,7 +69,7 @@ flowchart LR
 
     subgraph sec["Sprint 2: seguridad"]
         SEAL["+bearlytics/+security<br/>AES-256-GCM · RBAC"]
-        GW["Gateway / API<br/>(futuro, fuera de MATLAB)"]
+        GW["MATLAB Web App Server<br/>TLS · autenticación (decidido, por configurar)"]
     end
 
     subgraph app["Sprint 3: aplicación"]
@@ -81,7 +81,7 @@ flowchart LR
     RES --> PRE --> MOD --> RES
     MOD -- "artefacto de modelo (JSON)" --> SEAL
     SEAL -. "artefacto sellado" .-> APP
-    APP -. "futuro: a través de" .-> GW
+    GW -. "sirve" .-> APP
 ```
 
 Las líneas continuas existen hoy. Las discontinuas son la integración propuesta entre sprints (§5).
@@ -116,7 +116,17 @@ El mejor modelo actual es una regresión ridge sobre 32 predictores. En test obt
 | Repositorio | Código, configuración, resultados versionados | Colaboradores vía PR | Ruleset de `main`, CODEOWNERS, CI, revisión humana |
 | Artefactos derivados no versionados | Folds (`results/preprocess/`), `.mat` | El pipeline local | `.gitignore`; regenerables |
 | Artefacto de modelo | Coeficientes, escalador y metadatos (`results/modeling_ridge_rul_model.json`) | Modeling | Validación al decodificar; sellado AES-256-GCM al distribuirlo (sprint 2) |
-| Aplicación y gateway (futuros) | Peticiones de usuarios | Usuarios autenticados | OIDC + RBAC en el gateway (sprint 2) |
+| Aplicación servida por MATLAB Web App Server (futura) | Peticiones de usuarios | Usuarios autenticados por el servidor | Autenticación en el servidor + `isActionAllowed` en la app (sprint 2) |
+
+### 3.5 Despliegue (decidido 2026-11-25)
+
+El equipo acordó servir la app del sprint 3 con **MATLAB Web App Server**. Consecuencias para la arquitectura:
+
+- **Empaquetado:** la app MATLAB se compila como web app (MATLAB Compiler) y se publica en el servidor. Requiere licencias de MATLAB Compiler y de Web App Server.
+- **Punto de entrada:** el servidor hace el papel de gateway. TLS, autenticación de usuarios y límites de acceso se configuran en el servidor (o en un proxy inverso delante de él), no en el código de la app. La configuración concreta, el proveedor de identidad y el almacén de claves los define el sprint 2 a partir de la documentación de MathWorks para R2026b.
+- **Autorización:** la app recibe una identidad ya autenticada por el servidor y aplica `bearlytics.security.isActionAllowed(role, action)` antes de cada acción.
+- **Artefacto de modelo:** se carga desde almacenamiento del servidor, se abre con `openArtifact` (clave fuera del paquete de la app) y se decodifica con `decodeModelArtifact`.
+- **Stack:** se mantiene 100 % MATLAB (`AGENTS.md` §2); no hace falta reimplementar la inferencia en otro lenguaje.
 
 ## 4. Requisitos no funcionales
 
@@ -157,7 +167,7 @@ Flujo: `encodeModelArtifact` devuelve el payload JSON y la cabecera → `bearlyt
 
 ### 5.3 Reporte: sprint 4
 
-Todas las cifras del reporte deben citar su fichero en `results/` o el PR donde se publicaron. Las limitaciones del modelo (§3.3) y el carácter futuro del gateway deben aparecer de forma explícita.
+Todas las cifras del reporte deben citar su fichero en `results/` o el PR donde se publicaron. Las limitaciones del modelo (§3.3) y el estado real del despliegue (§3.5) deben aparecer de forma explícita.
 
 ## 6. Riesgos del proyecto
 
@@ -166,8 +176,9 @@ Todas las cifras del reporte deben citar su fichero en `results/` o el PR donde 
 | Modelo con poca capacidad predictiva en fase sana | La app puede dar una falsa sensación de precisión | Mostrar la incertidumbre; siguiente modelo con índice de salud relativo (recomendación de EDA/Multi), seleccionado solo con los 6 folds |
 | Test ya consumido | Comparaciones futuras sesgadas si se vuelve a usar para decidir | Seleccionar solo con validación; documentar cualquier reevaluación |
 | Features de inferencia solo para trayectorias completas | La app no puede predecir sobre un rodamiento en marcha | Función de historia causal sin RUL, reutilizada por PreProcess (§5.2) |
-| Destino de despliegue y proveedor OIDC/KMS sin decidir | Bloquea la autenticación y el gateway reales del sprint 2 | Decisión del equipo, pedida en #12 |
-| Sin gateway real | Los controles de red quedan en diseño | Declararlo en el reporte; no simular seguridad de red en MATLAB |
+| Proveedor de identidad y almacén de claves sin decidir | Bloquea la autenticación real en MATLAB Web App Server | Sprint 2: elegirlos y documentar la configuración del servidor |
+| Licencias de MATLAB Compiler y Web App Server | Sin ellas no se puede empaquetar ni servir la app | Confirmar disponibilidad antes del sprint 3 |
+| Servidor sin desplegar al cierre | Los controles de red quedarían solo en diseño | Declararlo en el reporte; no simular seguridad de red en MATLAB |
 
 ## 7. Referencias
 
